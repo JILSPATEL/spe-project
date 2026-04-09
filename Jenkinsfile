@@ -2,19 +2,13 @@ pipeline {
     agent any
 
     environment {
-        DOCKERHUB_CREDENTIALS = 'dockerhub-creds'
+        DOCKERHUB_CREDENTIALS = 'dockerhub-cred'
         IMAGE_BACKEND = 'jilspatel/backend'
         IMAGE_FRONTEND = 'jilspatel/frontend'
         TAG = "${BUILD_NUMBER}"
     }
 
     stages {
-
-        stage('Clone Code') {
-            steps {
-                git 'https://github.com/JILSPATEL/spe-project.git'
-            }
-        }
 
         stage('Build Images') {
             steps {
@@ -28,7 +22,7 @@ pipeline {
         stage('Push Images') {
             steps {
                 withCredentials([usernamePassword(
-                    credentialsId: 'dockerhub-creds',
+                    credentialsId: 'dockerhub-cred',
                     usernameVariable: 'USER',
                     passwordVariable: 'PASS'
                 )]) {

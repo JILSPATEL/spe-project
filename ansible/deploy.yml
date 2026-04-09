@@ -1,0 +1,44 @@
+- hosts: web
+  become: true
+
+  vars:
+    backend_image: "jilspatel/backend:{{ tag }}"
+    frontend_image: "jilspatel/frontend:{{ tag }}"
+
+  tasks:
+
+    # Pull latest images
+    - name: Pull backend image
+      docker_image:
+        name: "{{ backend_image }}"
+        source: pull
+
+    - name: Pull frontend image
+      docker_image:
+        name: "{{ frontend_image }}"
+        source: pull
+
+    # Recreate containers (no downtime strategy)
+    - name: Restart backend container
+      docker_container:
+        name: backend
+        image: "{{ backend_image }}"
+        state: started
+        recreate: yes
+        restart_policy: always
+        ports:
+          - "5000:5000"
+
+    - name: Restart frontend container
+      docker_container:
+        name: frontend
+        image: "{{ frontend_image }}"
+        state: started
+        recreate: yes
+        restart_policy: always
+        ports:
+          - "3000:3000"
+
+    # Clean old unused images (VERY IMPORTANT)
+    - name: Remove unused images
+      command: docker image prune -af

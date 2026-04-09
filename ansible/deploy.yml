@@ -9,7 +9,7 @@
 
   tasks:
 
-    # 1️⃣ Create network (like docker-compose)
+    # 1️⃣ Create network
     - name: Create app network
       docker_network:
         name: app-net
@@ -30,12 +30,12 @@
     # 3️⃣ Remove old images
     - name: Remove old backend images
       shell: |
-        docker images "jilspatel/backend" --format "{{'{{.Repository}}:{{.Tag}}'}}" | grep -v "{{ tag }}" | xargs -r docker rmi -f
+        docker images "jilspatel/backend" --format "{{.Repository}}:{{.Tag}}" | grep -v "{{ tag }}" | xargs -r docker rmi -f
       ignore_errors: yes
 
     - name: Remove old frontend images
       shell: |
-        docker images "jilspatel/frontend" --format "{{'{{.Repository}}:{{.Tag}}'}}" | grep -v "{{ tag }}" | xargs -r docker rmi -f
+        docker images "jilspatel/frontend" --format "{{.Repository}}:{{.Tag}}" | grep -v "{{ tag }}" | xargs -r docker rmi -f
       ignore_errors: yes
 
     # 4️⃣ Pull latest images
@@ -49,7 +49,7 @@
         name: "{{ frontend_image }}"
         source: pull
 
-    # 5️⃣ Run backend (WITH ENV + HOST FIX)
+    # 5️⃣ Run backend
     - name: Run backend container
       docker_container:
         name: ecommerce_backend
@@ -58,7 +58,7 @@
         restart_policy: always
         networks:
           - name: app-net
-        ports:
+        published_ports:
           - "5000:5000"
         env:
           PORT: "5000"
@@ -70,8 +70,8 @@
           FRONTEND_URL: "http://localhost:3000"
           JWT_SECRET: "change_this_in_production"
           NODE_ENV: "development"
-        extra_hosts:
-          - "host.docker.internal:host-gateway"
+        etc_hosts:
+          host.docker.internal: "host-gateway"
 
     # 6️⃣ Run frontend
     - name: Run frontend container
@@ -82,5 +82,5 @@
         restart_policy: always
         networks:
           - name: app-net
-        ports:
+        published_ports:
           - "3000:5173"

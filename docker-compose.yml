@@ -1,3 +1,5 @@
+version: "3.9"
+
 services:
 
   backend:
@@ -20,13 +22,10 @@ services:
       DB_NAME: ecommerce_solution
       FRONTEND_URL: http://localhost:3000
       JWT_SECRET: change_this_in_production
-      NODE_ENV: production
-
-    # ❌ backend not exposed (internal only)
-    # ports removed
+      NODE_ENV: development
 
     networks:
-      - frontend-net
+      - app-net
 
 
   frontend:
@@ -40,14 +39,14 @@ services:
     restart: unless-stopped
 
     ports:
-      - "3000:80"
+      - "3000:5173"
 
     depends_on:
       - backend
 
     networks:
-      - frontend-net
+      - app-net
 
 
 networks:
-  frontend-net:
+  app-net:

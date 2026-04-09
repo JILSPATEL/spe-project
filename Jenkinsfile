@@ -51,5 +51,3 @@ pipeline {
         }
     }
 }
-
-so this change fix my issue right?

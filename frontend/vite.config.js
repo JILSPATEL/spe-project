@@ -8,7 +8,7 @@ export default defineConfig({
     port: 5173,
     proxy: {
       '/api': {
-        target: 'http://backend:5000',
+        target: 'http://ecommerce_backend:5000',
         changeOrigin: true,
       }
     }

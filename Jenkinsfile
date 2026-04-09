@@ -19,8 +19,8 @@ pipeline {
         stage('Build Images') {
             steps {
                 sh '''
-                docker build -t $IMAGE_BACKEND:$TAG ./backend
-                docker build -t $IMAGE_FRONTEND:$TAG ./frontend
+                docker build --no-cache -t $IMAGE_BACKEND:$TAG ./backend
+                docker build --no-cache -t $IMAGE_FRONTEND:$TAG ./frontend
                 '''
             }
         }

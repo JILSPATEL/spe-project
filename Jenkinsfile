@@ -10,17 +10,11 @@ pipeline {
 
     stages {
 
-        stage('Clone Code') {
-            steps {
-                git 'https://github.com/JILSPATEL/spe-project.git'
-            }
-        }
-
         stage('Build Images') {
             steps {
                 sh '''
-                docker build -t $IMAGE_BACKEND:$TAG ./backend
-                docker build -t $IMAGE_FRONTEND:$TAG ./frontend
+                docker build --no-cache -t $IMAGE_BACKEND:$TAG ./backend
+                docker build --no-cache -t $IMAGE_FRONTEND:$TAG ./frontend
                 '''
             }
         }

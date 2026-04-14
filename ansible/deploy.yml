@@ -2,19 +2,8 @@
   become: true
 
   vars:
-    backend_repo: "{{ lookup('env', 'IMAGE_BACKEND') | default('jilspatel/backend') }}"
-    frontend_repo: "{{ lookup('env', 'IMAGE_FRONTEND') | default('jilspatel/frontend') }}"
     backend_image: "{{ backend_repo }}:{{ tag }}"
     frontend_image: "{{ frontend_repo }}:{{ tag }}"
-    db_host: "{{ lookup('env', 'DB_HOST') | default('host.docker.internal') }}"
-    db_port: "{{ lookup('env', 'DB_PORT') | default('3306') }}"
-    db_user: "{{ lookup('env', 'DB_USER') | default('root') }}"
-    db_password: "{{ lookup('env', 'DB_PASSWORD') }}"
-    db_name: "{{ lookup('env', 'DB_NAME') | default('ecommerce_solution') }}"
-    frontend_url: "{{ lookup('env', 'FRONTEND_URL') | default('http://localhost:3000') }}"
-    jwt_secret: "{{ lookup('env', 'JWT_SECRET') }}"
-    node_env: "{{ lookup('env', 'NODE_ENV') | default('development') }}"
-    backend_port: "{{ lookup('env', 'PORT') | default('5000') }}"
 
   tasks:
 
@@ -57,6 +46,7 @@
       docker_image:
         name: "{{ frontend_image }}"
         source: pull
+
     # 5️⃣ Run backend
     - name: Run backend container
       docker_container:

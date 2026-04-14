@@ -42,11 +42,25 @@ pipeline {
         }
         stage('Deploy with Ansible') {
             steps {
-                sh '''
-                ansible-playbook ansible/deploy.yml \
-                -i ansible/inventory.ini \
-                --extra-vars "tag=$TAG"
-                '''
+                withCredentials([file(credentialsId: 'env-file', variable: 'ENV_FILE')]) {
+                    sh '''
+                    export $(grep -v '^#' $ENV_FILE | xargs)
+                    ansible-playbook ansible/deploy.yml \
+                        -i ansible/inventory.ini \
+                        --extra-vars "tag=$TAG \
+                            backend_port=${PORT:-5000} \
+                            db_host=${DB_HOST} \
+                            db_port=${DB_PORT} \
+                            db_user=${DB_USER} \
+                            db_password=${DB_PASSWORD} \
+                            db_name=${DB_NAME} \
+                            frontend_url=${FRONTEND_URL} \
+                            jwt_secret=${JWT_SECRET} \
+                            node_env=${NODE_ENV} \
+                            backend_repo=${IMAGE_BACKEND} \
+                            frontend_repo=${IMAGE_FRONTEND}"
+                    '''
+                }
             }
         }
     }

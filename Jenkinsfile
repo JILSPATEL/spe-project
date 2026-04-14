@@ -1,9 +1,9 @@
 pipeline {
     agent any
     environment {
-        DOCKERHUB_CREDENTIALS = 'dockerhub-cred'
-        IMAGE_BACKEND = 'jilspatel/backend'
-        IMAGE_FRONTEND = 'jilspatel/frontend'
+        DOCKERHUB_CREDENTIALS = "${env.JENKINS_CREDENTIALS_ID ?: 'dockerhub-cred'}"
+        IMAGE_BACKEND = "${env.IMAGE_BACKEND ?: 'jilspatel/backend'}"
+        IMAGE_FRONTEND = "${env.IMAGE_FRONTEND ?: 'jilspatel/frontend'}"
         TAG = "${BUILD_NUMBER}"
     }
     stages {
@@ -18,7 +18,7 @@ pipeline {
         stage('Push Images') {
             steps {
                 withCredentials([usernamePassword(
-                    credentialsId: 'dockerhub-cred',
+                    credentialsId: "${DOCKERHUB_CREDENTIALS}",
                     usernameVariable: 'USER',
                     passwordVariable: 'PASS'
                 )]) {

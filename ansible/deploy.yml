@@ -2,10 +2,19 @@
   become: true
 
   vars:
-    backend_repo: "jilspatel/backend"
-    frontend_repo: "jilspatel/frontend"
+    backend_repo: "{{ lookup('env', 'IMAGE_BACKEND') | default('jilspatel/backend') }}"
+    frontend_repo: "{{ lookup('env', 'IMAGE_FRONTEND') | default('jilspatel/frontend') }}"
     backend_image: "{{ backend_repo }}:{{ tag }}"
     frontend_image: "{{ frontend_repo }}:{{ tag }}"
+    db_host: "{{ lookup('env', 'DB_HOST') | default('host.docker.internal') }}"
+    db_port: "{{ lookup('env', 'DB_PORT') | default('3306') }}"
+    db_user: "{{ lookup('env', 'DB_USER') | default('root') }}"
+    db_password: "{{ lookup('env', 'DB_PASSWORD') }}"
+    db_name: "{{ lookup('env', 'DB_NAME') | default('ecommerce_solution') }}"
+    frontend_url: "{{ lookup('env', 'FRONTEND_URL') | default('http://localhost:3000') }}"
+    jwt_secret: "{{ lookup('env', 'JWT_SECRET') }}"
+    node_env: "{{ lookup('env', 'NODE_ENV') | default('development') }}"
+    backend_port: "{{ lookup('env', 'PORT') | default('5000') }}"
 
   tasks:
 
@@ -30,12 +39,12 @@
     # 3️⃣ Remove old images
     - name: Remove old backend images
       shell: |
-        docker images "jilspatel/backend" --format "{{.Repository}}:{{.Tag}}" | grep -v "{{ tag }}" | xargs -r docker rmi -f
+        docker images "{{ backend_repo }}" --format "{{ '{{.Repository}}:{{.Tag}}' }}" | grep -v "{{ tag }}" | xargs -r docker rmi -f
       ignore_errors: yes
 
     - name: Remove old frontend images
       shell: |
-        docker images "jilspatel/frontend" --format "{{.Repository}}:{{.Tag}}" | grep -v "{{ tag }}" | xargs -r docker rmi -f
+        docker images "{{ frontend_repo }}" --format "{{ '{{.Repository}}:{{.Tag}}' }}" | grep -v "{{ tag }}" | xargs -r docker rmi -f
       ignore_errors: yes
 
     # 4️⃣ Pull latest images
@@ -59,17 +68,17 @@
         networks:
           - name: app-net
         published_ports:
-          - "5000:5000"
+          - "{{ backend_port }}:{{ backend_port }}"
         env:
-          PORT: "5000"
-          DB_HOST: "host.docker.internal"
-          DB_PORT: "3306"
-          DB_USER: "root"
-          DB_PASSWORD: "Jils@1863"
-          DB_NAME: "ecommerce_solution"
-          FRONTEND_URL: "http://localhost:3000"
-          JWT_SECRET: "change_this_in_production"
-          NODE_ENV: "development"
+          PORT: "{{ backend_port }}"
+          DB_HOST: "{{ db_host }}"
+          DB_PORT: "{{ db_port }}"
+          DB_USER: "{{ db_user }}"
+          DB_PASSWORD: "{{ db_password }}"
+          DB_NAME: "{{ db_name }}"
+          FRONTEND_URL: "{{ frontend_url }}"
+          JWT_SECRET: "{{ jwt_secret }}"
+          NODE_ENV: "{{ node_env }}"
         etc_hosts:
           host.docker.internal: "host-gateway"
 

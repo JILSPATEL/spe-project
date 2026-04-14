@@ -57,7 +57,6 @@
       docker_image:
         name: "{{ frontend_image }}"
         source: pull
-
     # 5️⃣ Run backend
     - name: Run backend container
       docker_container:

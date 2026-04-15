@@ -2,8 +2,8 @@ pipeline {
     agent any
     environment {
         DOCKERHUB_CREDENTIALS = "${env.JENKINS_CREDENTIALS_ID ?: 'dockerhub-cred'}"
-        IMAGE_BACKEND = "${env.IMAGE_BACKEND ?: 'jilspatel/backend'}"
-        IMAGE_FRONTEND = "${env.IMAGE_FRONTEND ?: 'jilspatel/frontend'}"
+        IMAGE_BACKEND = "${env.IMAGE_BACKEND}"
+        IMAGE_FRONTEND = "${env.IMAGE_FRONTEND}"
         TAG = "${BUILD_NUMBER}"
     }
     stages {

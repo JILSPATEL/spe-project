@@ -1,4 +1,4 @@
-<<<<<<< HEAD
+
 # E-commerce Solution - React & MySQL
 
 A modern, full-stack e-commerce application built with React, Node.js, and MySQL.

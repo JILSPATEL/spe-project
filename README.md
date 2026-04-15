@@ -127,7 +127,7 @@ Pre-seeded test accounts:
 - Unknown database: re-run the schema and seed imports.
 - Port conflicts: change `PORT` in `backend/.env` or stop the process using the port.
 
-If login fails, try signing up a new account via the app; seeded accounts are for convenience but may be changed by reseeding. lol
+If login fails, try signing up a new account via the app; seeded accounts are for convenience but may be changed by reseeding. 
 
 ---
 

@@ -33,6 +33,21 @@ pipeline {
             }
         }
 
+        // ✅ SCA & SAST DevSecOps Scans
+        stage('Security Scans') {
+            steps {
+                sh '''
+                echo "Running SCA and SAST within a temporary Node container"
+                docker run --rm -v "$(pwd):/workspace" -w /workspace node:20 bash -c "
+                    echo 'Scanning Backend...' &&
+                    cd backend && npm install --include=dev && npm run security &&
+                    echo 'Scanning Frontend...' &&
+                    cd ../frontend && npm install --include=dev && npm run security
+                "
+                '''
+            }
+        }
+
         // ✅ Build Docker images
         stage('Build Images') {
             steps {

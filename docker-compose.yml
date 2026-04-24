@@ -40,6 +40,9 @@ services:
     ports:
       - "3000:5173"
 
+    environment:
+      - VITE_PROXY_TARGET=http://backend:${PORT}
+
     depends_on:
       - backend
 

@@ -2,6 +2,9 @@ import { Link } from 'react-router-dom';
 import './ProductCard.css';
 
 const ProductCard = ({ product, showActions = false, onDelete }) => {
+    const isLowStock = product.available_inventory <= 5 && product.available_inventory > 0;
+    const isOutOfStock = product.available_inventory === 0;
+
     return (
         <div className="product-card">
             <Link to={`/details/${product.id}`} className="product-link">
@@ -15,6 +18,8 @@ const ProductCard = ({ product, showActions = false, onDelete }) => {
                         }}
                     />
                     <span className="product-category-badge">{product.category}</span>
+                    {isOutOfStock && <span className="stock-badge out-of-stock">Out of Stock</span>}
+                    {isLowStock && <span className="stock-badge low-stock">Only {product.available_inventory} left!</span>}
                 </div>
                 <div className="product-info">
                     <h3 className="product-name">{product.name}</h3>
@@ -26,6 +31,9 @@ const ProductCard = ({ product, showActions = false, onDelete }) => {
                         {product.color && (
                             <span className="product-color">Color: {product.color}</span>
                         )}
+                    </div>
+                    <div className="inventory-display">
+                        Stock: {product.available_inventory !== undefined ? product.available_inventory : (product.inventory_count || 0)}
                     </div>
                 </div>
             </Link>

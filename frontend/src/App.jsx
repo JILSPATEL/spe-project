@@ -10,6 +10,7 @@ import UserAuth from './pages/UserAuth';
 import SellerAuth from './pages/SellerAuth';
 import SellerHome from './pages/SellerHome';
 import AddProduct from './pages/AddProduct';
+import EditProduct from './pages/EditProduct';
 import Checkout from './pages/Checkout';
 import MyOrders from './pages/MyOrders';
 import SellerOrders from './pages/SellerOrders';
@@ -39,6 +40,7 @@ function App() {
                   {/* Seller Routes */}
                   <Route path="/seller-home" element={<SellerHome />} />
                   <Route path="/seller-add-product" element={<AddProduct />} />
+                  <Route path="/seller-update-product/:productId" element={<EditProduct />} />
                   <Route path="/seller-orders" element={<SellerOrders />} />
                 </Routes>
               </main>

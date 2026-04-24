@@ -87,6 +87,18 @@
     gap: 1rem;
 }
 
+.quantity-info {
+    display: flex;
+    flex-direction: column;
+    align-items: flex-end;
+    gap: 0.5rem;
+}
+
+.available-stock {
+    font-size: 0.75rem;
+    color: var(--text-secondary);
+}
+
 .quantity-controls {
     display: flex;
     align-items: center;

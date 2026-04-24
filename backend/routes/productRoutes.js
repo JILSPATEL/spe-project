@@ -86,7 +86,12 @@ router.get('/:id', async (req, res) => {
         if (!product) {
             return res.status(404).json({ message: 'Product not found' });
         }
-        res.json(product);
+        
+        const availableInventory = await Product.getAvailableInventory(req.params.id);
+        res.json({
+            ...product,
+            available_inventory: availableInventory
+        });
     } catch (error) {
         console.error('Get product error:', error);
         res.status(500).json({ message: 'Server error fetching product' });
@@ -100,7 +105,8 @@ router.post('/',
         body('name').trim().notEmpty().withMessage('Product name is required'),
         body('price').isNumeric().withMessage('Price must be a number'),
         body('category').notEmpty().withMessage('Category is required'),
-        body('description').trim().notEmpty().withMessage('Description is required')
+        body('description').trim().notEmpty().withMessage('Description is required'),
+        body('inventory_count').optional().isNumeric().withMessage('Inventory count must be a number')
     ],
     async (req, res) => {
         try {
@@ -134,7 +140,8 @@ router.put('/:id',
         body('name').trim().notEmpty().withMessage('Product name is required'),
         body('price').isNumeric().withMessage('Price must be a number'),
         body('category').notEmpty().withMessage('Category is required'),
-        body('description').trim().notEmpty().withMessage('Description is required')
+        body('description').trim().notEmpty().withMessage('Description is required'),
+        body('inventory_count').optional().isNumeric().withMessage('Inventory count must be a number')
     ],
     async (req, res) => {
         try {

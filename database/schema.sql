@@ -40,6 +40,8 @@ CREATE TABLE products (
     color VARCHAR(100),
     description TEXT,
     image VARCHAR(500),
+    inventory_count INT DEFAULT 0,
+    reserved_quantity INT DEFAULT 0,
     seller_id VARCHAR(36),
     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
     updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,

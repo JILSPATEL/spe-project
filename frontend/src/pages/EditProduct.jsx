@@ -1,9 +1,11 @@
-import { useState } from 'react';
-import { useNavigate } from 'react-router-dom';
+import { useState, useEffect } from 'react';
+import { useNavigate, useParams } from 'react-router-dom';
 import { productService } from '../services/productService';
 import './AddProduct.css';
 
-const AddProduct = () => {
+const EditProduct = () => {
+    const { productId } = useParams();
+    const navigate = useNavigate();
     const [formData, setFormData] = useState({
         name: '',
         price: '',
@@ -15,9 +17,34 @@ const AddProduct = () => {
     });
     const [error, setError] = useState('');
     const [loading, setLoading] = useState(false);
-    const navigate = useNavigate();
+    const [fetching, setFetching] = useState(true);
 
     const categories = ['Mobile', 'Laptop', 'TV', 'Camera', 'Electronics', 'Clothes', 'Other'];
+
+    useEffect(() => {
+        const fetchProduct = async () => {
+            try {
+                const data = await productService.getProduct(productId);
+                setFormData({
+                    name: data.name || '',
+                    price: data.price || '',
+                    category: data.category || 'Mobile',
+                    color: data.color || '',
+                    description: data.description || '',
+                    image: data.image || '',
+                    inventory_count: data.inventory_count || 0,
+                });
+            } catch (err) {
+                setError('Failed to load product');
+            } finally {
+                setFetching(false);
+            }
+        };
+
+        if (productId) {
+            fetchProduct();
+        }
+    }, [productId]);
 
     const handleChange = (e) => {
         setFormData({
@@ -32,20 +59,29 @@ const AddProduct = () => {
         setLoading(true);
 
         try {
-            await productService.addProduct(formData);
+            await productService.updateProduct(productId, formData);
             navigate('/seller-home');
         } catch (err) {
-            setError(err.response?.data?.message || 'Failed to add product');
+            setError(err.response?.data?.message || 'Failed to update product');
         } finally {
             setLoading(false);
         }
     };
 
+    if (fetching) {
+        return (
+            <div className="loading-container">
+                <div className="spinner"></div>
+                <p>Loading product...</p>
+            </div>
+        );
+    }
+
     return (
         <div className="add-product-page">
             <div className="container">
                 <div className="form-container">
-                    <h1 className="page-title">Add New Product</h1>
+                    <h1 className="page-title">Edit Product</h1>
 
                     {error && <div className="alert alert-error">{error}</div>}
 
@@ -157,7 +193,7 @@ const AddProduct = () => {
                                 className="btn btn-primary"
                                 disabled={loading}
                             >
-                                {loading ? 'Adding...' : 'Add Product'}
+                                {loading ? 'Updating...' : 'Update Product'}
                             </button>
                         </div>
                     </form>
@@ -167,4 +203,4 @@ const AddProduct = () => {
     );
 };
 
-export default AddProduct;
+export default EditProduct;

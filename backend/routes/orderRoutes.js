@@ -51,8 +51,8 @@ router.post(
 
             const { orderId } = await Order.create(orderData);
 
-            // Clear cart
-            await Cart.clearCart(userId);
+            // Clear cart but do not release inventory (already deducted by Order.create)
+            await Cart.clearCart(userId, false);
 
             res.status(201).json({
                 message: 'Order placed successfully',
@@ -154,9 +154,9 @@ router.put('/:orderId/cancel', authMiddleware, async (req, res) => {
             return res.status(400).json({ message: 'Order cannot be cancelled' });
         }
 
-        const updated = await Order.updateStatus(orderId, 'Cancelled');
+        const cancelled = await Order.cancelOrder(orderId);
 
-        if (updated) {
+        if (cancelled) {
             res.json({ message: 'Order cancelled successfully' });
         } else {
             res.status(500).json({ message: 'Failed to cancel order' });

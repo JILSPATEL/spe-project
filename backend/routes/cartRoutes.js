@@ -32,7 +32,7 @@ router.post('/', authMiddleware, async (req, res) => {
         });
     } catch (error) {
         console.error('Add to cart error:', error);
-        res.status(500).json({ message: 'Server error adding to cart' });
+        res.status(400).json({ message: error.message || 'Server error adding to cart' });
     }
 });
 
@@ -41,20 +41,17 @@ router.put('/:cartId', authMiddleware, async (req, res) => {
     try {
         const { cartId } = req.params;
         const { quantity } = req.body;
+        const userId = req.user.id;
 
         if (!quantity || quantity < 1) {
             return res.status(400).json({ message: 'Valid quantity is required' });
         }
 
-        const updated = await Cart.updateQuantity(cartId, quantity);
-        if (!updated) {
-            return res.status(404).json({ message: 'Cart item not found' });
-        }
-
+        await Cart.updateQuantity(cartId, quantity, userId);
         res.json({ message: 'Cart updated successfully' });
     } catch (error) {
         console.error('Update cart error:', error);
-        res.status(500).json({ message: 'Server error updating cart' });
+        res.status(400).json({ message: error.message || 'Server error updating cart' });
     }
 });
 
@@ -62,11 +59,8 @@ router.put('/:cartId', authMiddleware, async (req, res) => {
 router.delete('/:cartId', authMiddleware, async (req, res) => {
     try {
         const { cartId } = req.params;
-        const removed = await Cart.removeItem(cartId);
-
-        if (!removed) {
-            return res.status(404).json({ message: 'Cart item not found' });
-        }
+        const userId = req.user.id;
+        await Cart.removeItem(cartId, userId);
 
         res.json({ message: 'Item removed from cart' });
     } catch (error) {

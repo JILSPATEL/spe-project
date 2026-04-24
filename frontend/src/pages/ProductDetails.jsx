@@ -45,13 +45,18 @@ const ProductDetails = () => {
             setAdding(true);
             await cartService.addToCart(productId, 1);
             await fetchCartCount();
+            const updatedProduct = await productService.getProduct(productId);
+            setProduct(updatedProduct);
             alert('Product added to cart!');
         } catch (err) {
-            alert('Failed to add to cart. Please try again.');
+            alert(err.response?.data?.message || err.message || 'Failed to add to cart. Please try again.');
         } finally {
             setAdding(false);
         }
     };
+
+    const isOutOfStock = product && (product.available_inventory === 0 || product.available_inventory === undefined);
+    const isLowStock = product && product.available_inventory > 0 && product.available_inventory <= 5;
 
     if (loading) {
         return (
@@ -108,6 +113,18 @@ const ProductDetails = () => {
                             </div>
                         )}
 
+                        {isLowStock && (
+                            <div className="low-stock-alert">
+                                Hurry! Only {product.available_inventory} items left!
+                            </div>
+                        )}
+
+                        {isOutOfStock && (
+                            <div className="out-of-stock-label">
+                                Out of Stock
+                            </div>
+                        )}
+
                         <div className="product-description-section">
                             <h3>Description</h3>
                             <p>{product.description}</p>
@@ -117,11 +134,14 @@ const ProductDetails = () => {
                             <button
                                 className="btn btn-primary btn-lg"
                                 onClick={handleAddToCart}
-                                disabled={adding}
+                                disabled={adding || isOutOfStock}
                             >
-                                {adding ? 'Adding...' : 'Add to Cart'}
+                                {adding ? 'Adding...' : isOutOfStock ? 'Out of Stock' : 'Add to Cart'}
                             </button>
-                            <button className="btn btn-outline btn-lg">
+                            <button 
+                                className="btn btn-outline btn-lg" 
+                                disabled={isOutOfStock}
+                            >
                                 Buy Now
                             </button>
                         </div>

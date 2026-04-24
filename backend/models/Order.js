@@ -1,5 +1,6 @@
 const db = require('../config/database');
 const { v4: uuidv4 } = require('uuid');
+const Product = require('./Product');
 
 class Order {
     // Create new order
@@ -7,24 +8,40 @@ class Order {
         const { userId, name, email, address, pincode, contact, totalPrice, items } = orderData;
         const orderId = uuidv4();
 
-        // Insert order
-        const orderQuery = `
-      INSERT INTO orders (id, user_id, name, email, address, pincode, contact, total_price, order_status)
-      VALUES (?, ?, ?, ?, ?, ?, ?, ?, 'Pending')
-    `;
-        await db.execute(orderQuery, [orderId, userId, name, email, address, pincode, contact, totalPrice]);
+        const connection = await db.getConnection();
+        try {
+            await connection.beginTransaction();
 
-        // Insert order items
-        for (const item of items) {
-            const itemId = uuidv4();
-            const itemQuery = `
-        INSERT INTO order_items (id, order_id, product_id, product_name, price, quantity)
-        VALUES (?, ?, ?, ?, ?, ?)
-      `;
-            await db.execute(itemQuery, [itemId, orderId, item.product_id, item.name, item.price, item.quantity]);
+            for (const item of items) {
+                const deducted = await Product.deductInventory(item.product_id, item.quantity);
+                if (!deducted) {
+                    throw new Error(`Insufficient inventory for product: ${item.name}`);
+                }
+            }
+
+            const orderQuery = `
+          INSERT INTO orders (id, user_id, name, email, address, pincode, contact, total_price, order_status)
+          VALUES (?, ?, ?, ?, ?, ?, ?, ?, 'Pending')
+        `;
+            await connection.execute(orderQuery, [orderId, userId, name, email, address, pincode, contact, totalPrice]);
+
+            for (const item of items) {
+                const itemId = uuidv4();
+                const itemQuery = `
+            INSERT INTO order_items (id, order_id, product_id, product_name, price, quantity)
+            VALUES (?, ?, ?, ?, ?, ?)
+          `;
+                await connection.execute(itemQuery, [itemId, orderId, item.product_id, item.name, item.price, item.quantity]);
+            }
+
+            await connection.commit();
+            return { orderId };
+        } catch (error) {
+            await connection.rollback();
+            throw error;
+        } finally {
+            connection.release();
         }
-
-        return { orderId };
     }
 
     // Get orders by user
@@ -96,6 +113,42 @@ class Order {
         const query = 'UPDATE orders SET order_status = ? WHERE id = ?';
         const [result] = await db.execute(query, [status, orderId]);
         return result.affectedRows > 0;
+    }
+
+    // Cancel order and restore inventory
+    static async cancelOrder(orderId) {
+        const connection = await db.getConnection();
+        try {
+            await connection.beginTransaction();
+
+            const [orderRows] = await connection.execute('SELECT * FROM orders WHERE id = ?', [orderId]);
+            if (orderRows.length === 0) {
+                await connection.rollback();
+                return false;
+            }
+
+            const order = orderRows[0];
+            if (['Delivered', 'Cancelled'].includes(order.order_status)) {
+                await connection.rollback();
+                return false;
+            }
+
+            const [items] = await connection.execute('SELECT * FROM order_items WHERE order_id = ?', [orderId]);
+
+            for (const item of items) {
+                await Product.restoreInventory(item.product_id, item.quantity);
+            }
+
+            await connection.execute('UPDATE orders SET order_status = ? WHERE id = ?', ['Cancelled', orderId]);
+
+            await connection.commit();
+            return true;
+        } catch (error) {
+            await connection.rollback();
+            throw error;
+        } finally {
+            connection.release();
+        }
     }
 
     // Get order items

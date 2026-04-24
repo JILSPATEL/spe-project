@@ -37,13 +37,18 @@ const Cart = () => {
     const updateQuantity = async (cartId, newQuantity) => {
         if (newQuantity < 1) return;
 
+        const item = cartItems.find(i => i.id === cartId);
+        if (item && newQuantity > item.quantity + item.available_inventory) {
+            alert(`Only ${item.quantity + item.available_inventory} items available in total`);
+            return;
+        }
+
         try {
             await cartService.updateCartItem(cartId, newQuantity);
-            setCartItems(cartItems.map(item =>
-                item.id === cartId ? { ...item, quantity: newQuantity } : item
-            ));
+            const data = await cartService.getCartItems();
+            setCartItems(data);
         } catch (err) {
-            alert('Failed to update quantity');
+            alert(err.response?.data?.message || err.message || 'Failed to update quantity');
         }
     };
 
@@ -52,7 +57,8 @@ const Cart = () => {
 
         try {
             await cartService.removeFromCart(cartId);
-            setCartItems(cartItems.filter(item => item.id !== cartId));
+            const data = await cartService.getCartItems();
+            setCartItems(data);
             await fetchCartCount();
         } catch (err) {
             alert('Failed to remove item');
@@ -107,21 +113,31 @@ const Cart = () => {
                                     </div>
 
                                     <div className="cart-item-actions">
-                                        <div className="quantity-controls">
-                                            <button
-                                                className="qty-btn"
-                                                onClick={() => updateQuantity(item.id, item.quantity - 1)}
-                                                disabled={item.quantity <= 1}
-                                            >
-                                                -
-                                            </button>
-                                            <span className="quantity">{item.quantity}</span>
-                                            <button
-                                                className="qty-btn"
-                                                onClick={() => updateQuantity(item.id, item.quantity + 1)}
-                                            >
-                                                +
-                                            </button>
+                                        <div className="quantity-info">
+                                            {item.available_inventory !== undefined && (
+                                                <span className="available-stock">
+                                                    {item.available_inventory > 0 
+                                                        ? `${item.available_inventory} available` 
+                                                        : 'Out of stock'}
+                                                </span>
+                                            )}
+                                            <div className="quantity-controls">
+                                                <button
+                                                    className="qty-btn"
+                                                    onClick={() => updateQuantity(item.id, item.quantity - 1)}
+                                                    disabled={item.quantity <= 1}
+                                                >
+                                                    -
+                                                </button>
+                                                <span className="quantity">{item.quantity}</span>
+                                                <button
+                                                    className="qty-btn"
+                                                    onClick={() => updateQuantity(item.id, item.quantity + 1)}
+                                                    disabled={item.available_inventory <= 0}
+                                                >
+                                                    +
+                                                </button>
+                                            </div>
                                         </div>
 
                                         <p className="item-total">

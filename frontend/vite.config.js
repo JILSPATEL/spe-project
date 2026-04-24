@@ -8,6 +8,7 @@ export default defineConfig({
     port: 5173,
     proxy: {
       '/api': {
+        // eslint-disable-next-line no-undef
         target: process.env.VITE_PROXY_TARGET || 'http://localhost:5001',
         changeOrigin: true,
       }

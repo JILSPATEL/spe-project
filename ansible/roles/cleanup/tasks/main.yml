@@ -1,0 +1,24 @@
+---
+# 2️⃣ Remove old containers
+- name: Remove backend container
+  docker_container:
+    name: ecommerce_backend
+    state: absent
+  ignore_errors: yes
+
+- name: Remove frontend container
+  docker_container:
+    name: ecommerce_frontend
+    state: absent
+  ignore_errors: yes
+
+# 3️⃣ Remove old images
+- name: Remove old backend images
+  shell: |
+    docker images "{{ backend_repo }}" --format "{{ '{{.Repository}}:{{.Tag}}' }}" | grep -v "{{ tag }}" | xargs -r docker rmi -f
+  ignore_errors: yes
+
+- name: Remove old frontend images
+  shell: |
+    docker images "{{ frontend_repo }}" --format "{{ '{{.Repository}}:{{.Tag}}' }}" | grep -v "{{ tag }}" | xargs -r docker rmi -f
+  ignore_errors: yes

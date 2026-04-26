@@ -1,0 +1,30 @@
+---
+# 4️⃣ Pull latest images (Backend)
+- name: Pull backend image
+  docker_image:
+    name: "{{ backend_image }}"
+    source: pull
+
+# 5️⃣ Run backend
+- name: Run backend container
+  docker_container:
+    name: ecommerce_backend
+    image: "{{ backend_image }}"
+    state: started
+    restart_policy: always
+    networks:
+      - name: app-net
+    published_ports:
+      - "{{ backend_port }}:{{ backend_port }}"
+    env:
+      PORT: "{{ backend_port }}"
+      DB_HOST: "{{ db_host }}"
+      DB_PORT: "{{ db_port }}"
+      DB_USER: "{{ db_user }}"
+      DB_PASSWORD: "{{ db_password }}"
+      DB_NAME: "{{ db_name }}"
+      FRONTEND_URL: "{{ frontend_url }}"
+      JWT_SECRET: "{{ jwt_secret }}"
+      NODE_ENV: "{{ node_env }}"
+    etc_hosts:
+      host.docker.internal: "host-gateway"

@@ -33,50 +33,69 @@ pipeline {
             }
         }
 
-        // ✅ SCA, SAST & Container Scanning (DevSecOps)
-        stage('Security Scans') {
+        // ✅ SCA — Software Composition Analysis (dependency vulnerability check)
+        stage('SCA') {
             steps {
-                script {
+                sh '''
+                echo "Running SCA (npm audit) on Backend and Frontend..."
+                docker run --rm -v "$(pwd):/workspace" -w /workspace node:20 bash -c "
+                    echo 'SCA: Backend...' &&
+                    cd backend && npm install --include=dev && npm run sca &&
+                    echo 'SCA: Frontend...' &&
+                    cd ../frontend && npm install --include=dev && npm run sca
+                "
+                '''
+            }
+        }
 
-                    // Step 1: SCA & SAST — scan source code and dependencies
-                    sh '''
-                    echo "Running SCA and SAST within a temporary Node container"
-                    docker run --rm -v "$(pwd):/workspace" -w /workspace node:20 bash -c "
-                        echo 'Scanning Backend...' &&
-                        cd backend && npm install --include=dev && npm run security &&
-                        echo 'Scanning Frontend...' &&
-                        cd ../frontend && npm install --include=dev && npm run security
-                    "
-                    '''
+        // ✅ SAST — Static Application Security Testing (source code analysis)
+        stage('SAST') {
+            steps {
+                sh '''
+                echo "Running SAST (ESLint security plugin) on Backend and Frontend..."
+                docker run --rm -v "$(pwd):/workspace" -w /workspace node:20 bash -c "
+                    echo 'SAST: Backend...' &&
+                    cd backend && npm install --include=dev && npm run sast &&
+                    echo 'SAST: Frontend...' &&
+                    cd ../frontend && npm install --include=dev && npm run sast
+                "
+                '''
+            }
+        }
 
-                    // Step 2: Build Docker images so Trivy can scan them
-                    sh '''
-                    echo "Building Docker images for container scanning..."
-                    docker build --no-cache -t $IMAGE_BACKEND:$TAG ./backend
-                    docker build --no-cache -t $IMAGE_FRONTEND:$TAG ./frontend
-                    '''
+        // ✅ Build Docker images (required before container scan)
+        stage('Build Images') {
+            steps {
+                sh '''
+                echo "Building Docker images..."
+                docker build --no-cache -t $IMAGE_BACKEND:$TAG ./backend
+                docker build --no-cache -t $IMAGE_FRONTEND:$TAG ./frontend
+                '''
+            }
+        }
 
-                    // Step 3: Trivy container vulnerability scan via Docker (no host install needed)
-                    sh '''
-                    echo "Running Trivy vulnerability scan on backend image..."
-                    docker run --rm \
-                        -v /var/run/docker.sock:/var/run/docker.sock \
-                        aquasec/trivy:0.49.1 image \
-                        --severity CRITICAL,HIGH \
-                        --exit-code 1 \
-                        --no-progress \
-                        $IMAGE_BACKEND:$TAG || true
+        // ✅ Container Scan — Trivy image vulnerability scan
+        stage('Container Scan (Trivy)') {
+            steps {
+                sh '''
+                echo "Running Trivy vulnerability scan on backend image..."
+                docker run --rm \
+                    -v /var/run/docker.sock:/var/run/docker.sock \
+                    aquasec/trivy:0.49.1 image \
+                    --severity CRITICAL,HIGH \
+                    --exit-code 1 \
+                    --no-progress \
+                    $IMAGE_BACKEND:$TAG || true
 
-                    echo "Running Trivy vulnerability scan on frontend image..."
-                    docker run --rm \
-                        -v /var/run/docker.sock:/var/run/docker.sock \
-                        aquasec/trivy:0.49.1 image \
-                        --severity CRITICAL,HIGH \
-                        --exit-code 1 \
-                        --no-progress \
-                        $IMAGE_FRONTEND:$TAG || true
-                    '''
-                }
+                echo "Running Trivy vulnerability scan on frontend image..."
+                docker run --rm \
+                    -v /var/run/docker.sock:/var/run/docker.sock \
+                    aquasec/trivy:0.49.1 image \
+                    --severity CRITICAL,HIGH \
+                    --exit-code 1 \
+                    --no-progress \
+                    $IMAGE_FRONTEND:$TAG || true
+                '''
             }
         }
 

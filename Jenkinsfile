@@ -38,14 +38,7 @@ pipeline {
             steps {
                 script {
 
-                    // Step 1: Install Trivy (container vulnerability scanner)
-                    sh '''
-                    echo "Installing Trivy..."
-                    curl -sfL https://raw.githubusercontent.com/aquasecurity/trivy/main/contrib/install.sh | sh -s -- -b /usr/local/bin v0.49.1 || true
-                    trivy --version
-                    '''
-
-                    // Step 2: SCA & SAST — scan source code and dependencies
+                    // Step 1: SCA & SAST — scan source code and dependencies
                     sh '''
                     echo "Running SCA and SAST within a temporary Node container"
                     docker run --rm -v "$(pwd):/workspace" -w /workspace node:20 bash -c "
@@ -56,20 +49,32 @@ pipeline {
                     "
                     '''
 
-                    // Step 3: Build Docker images so Trivy can scan them
+                    // Step 2: Build Docker images so Trivy can scan them
                     sh '''
                     echo "Building Docker images for container scanning..."
                     docker build --no-cache -t $IMAGE_BACKEND:$TAG ./backend
                     docker build --no-cache -t $IMAGE_FRONTEND:$TAG ./frontend
                     '''
 
-                    // Step 4: Trivy container vulnerability scan (CRITICAL & HIGH)
+                    // Step 3: Trivy container vulnerability scan via Docker (no host install needed)
                     sh '''
                     echo "Running Trivy vulnerability scan on backend image..."
-                    trivy image --severity CRITICAL,HIGH --exit-code 1 --no-progress $IMAGE_BACKEND:$TAG || true
+                    docker run --rm \
+                        -v /var/run/docker.sock:/var/run/docker.sock \
+                        aquasec/trivy:0.49.1 image \
+                        --severity CRITICAL,HIGH \
+                        --exit-code 1 \
+                        --no-progress \
+                        $IMAGE_BACKEND:$TAG || true
 
                     echo "Running Trivy vulnerability scan on frontend image..."
-                    trivy image --severity CRITICAL,HIGH --exit-code 1 --no-progress $IMAGE_FRONTEND:$TAG || true
+                    docker run --rm \
+                        -v /var/run/docker.sock:/var/run/docker.sock \
+                        aquasec/trivy:0.49.1 image \
+                        --severity CRITICAL,HIGH \
+                        --exit-code 1 \
+                        --no-progress \
+                        $IMAGE_FRONTEND:$TAG || true
                     '''
                 }
             }

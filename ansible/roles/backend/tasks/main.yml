@@ -1,8 +1,8 @@
 ---
 # Deploy all microservices
-- name: Set facts for microservices
+- name: Set facts for all backend services
   set_fact:
-    services:
+    all_services:
       - name: user-service
         port: 5001
       - name: seller-service
@@ -15,6 +15,16 @@
         port: 5005
       - name: api-gateway
         port: 5000
+
+- name: Filter services to deploy
+  set_fact:
+    services: "{{ all_services | selectattr('name', 'in', target_services.split(',')) | list }}"
+  when: target_services is defined
+
+- name: Default to all services
+  set_fact:
+    services: "{{ all_services }}"
+  when: target_services is not defined
 
 - name: Pull microservice images
   docker_image:

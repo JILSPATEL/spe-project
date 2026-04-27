@@ -1,0 +1,183 @@
+pipeline {
+    agent any
+
+    environment {
+        TAG = "${BUILD_NUMBER}"
+        SERVICES = "frontend"
+    }
+
+    triggers {
+        GenericTrigger(
+            genericVariables: [
+                [key: 'MODIFIED_FILES', value: '$.commits[*].modified[*]'],
+                [key: 'ADDED_FILES', value: '$.commits[*].added[*]'],
+                [key: 'REMOVED_FILES', value: '$.commits[*].removed[*]']
+            ],
+            causeString: 'Triggered by frontend changes',
+            token: 'frontend-pipeline-token',
+            printContributedVariables: true,
+            printPostContent: true,
+            silentResponse: false,
+            regexpFilterText: '$MODIFIED_FILES $ADDED_FILES $REMOVED_FILES',
+            regexpFilterExpression: '.*frontend/.*'
+        )
+    }
+
+    stages {
+
+        // ✅ Load .env file from Jenkins credentials
+        stage('Load Env') {
+            steps {
+                withCredentials([file(credentialsId: 'env-file', variable: 'ENV_FILE')]) {
+                    script {
+                        def props = readProperties file: ENV_FILE
+
+                        env.IMAGE_BACKEND = props.IMAGE_BACKEND
+                        env.IMAGE_FRONTEND = props.IMAGE_FRONTEND
+                        env.DOCKERHUB_CREDENTIALS = props.JENKINS_CREDENTIALS_ID
+
+                        // Optional (for deploy stage reuse)
+                        env.DB_HOST = props.DB_HOST
+                        env.DB_PORT = props.DB_PORT
+                        env.DB_USER = props.DB_USER
+                        env.DB_PASSWORD = props.DB_PASSWORD
+                        env.DB_NAME = props.DB_NAME
+                        env.PORT = props.PORT
+                        env.FRONTEND_URL = props.FRONTEND_URL
+                        env.JWT_SECRET = props.JWT_SECRET
+                        env.NODE_ENV = props.NODE_ENV
+                    }
+                }
+            }
+        }
+
+        // ✅ SCA — Software Composition Analysis (dependency vulnerability check)
+        stage('SCA') {
+            steps {
+                script {
+                    sh """
+                    echo "Running SCA (npm audit)..."
+                    docker run --rm -v "\$(pwd):/workspace" -w /workspace node:20 bash -c "echo 'SCA: Frontend...' && cd frontend && npm install --include=dev && npm run sca"
+                    """
+                }
+            }
+        }
+
+        // ✅ SAST — Static Application Security Testing (source code analysis)
+        stage('SAST') {
+            steps {
+                script {
+                    sh """
+                    echo "Running SAST (ESLint security plugin)..."
+                    docker run --rm -v "\$(pwd):/workspace" -w /workspace node:20 bash -c "echo 'SAST: Frontend...' && cd frontend && npm install --include=dev && npm run sast"
+                    """
+                }
+            }
+        }
+
+        // ✅ Build Docker images
+        stage('Build Images') {
+            steps {
+                script {
+                    sh "echo 'Building Docker images...'"
+                    sh "docker build --no-cache -t ${env.IMAGE_FRONTEND}:${env.TAG} ./frontend"
+                }
+            }
+        }
+
+        // ✅ Container Scan — Trivy image vulnerability scan
+        stage('Container Scan (Trivy)') {
+            steps {
+                script {
+                    sh """
+                    echo "Running Trivy vulnerability scan on frontend image..."
+                    docker run --rm \
+                        -v /var/run/docker.sock:/var/run/docker.sock \
+                        aquasec/trivy:0.49.1 image \
+                        --severity CRITICAL,HIGH \
+                        --exit-code 1 \
+                        --no-progress \
+                        ${env.IMAGE_FRONTEND}:${env.TAG} || true
+                    """
+                }
+            }
+        }
+
+        // ✅ Push to Docker Hub
+        stage('Push Images') {
+            steps {
+                withCredentials([usernamePassword(
+                    credentialsId: "${DOCKERHUB_CREDENTIALS}",
+                    usernameVariable: 'USER',
+                    passwordVariable: 'PASS'
+                )]) {
+                    script {
+                        sh "echo \$PASS | docker login -u \$USER --password-stdin"
+                        sh "docker push ${env.IMAGE_FRONTEND}:${env.TAG}"
+                    }
+                }
+            }
+        }
+
+        // ✅ Sign Images — Cosign image signing
+        stage('Sign Images') {
+            steps {
+                withCredentials([file(credentialsId: 'cosign-key', variable: 'COSIGN_KEY')]) {
+                    script {
+                        sh '''
+                        echo "Installing Cosign to workspace..."
+                        curl -sSfL https://github.com/sigstore/cosign/releases/download/v2.2.1/cosign-linux-amd64 -o ./cosign
+                        chmod +x ./cosign
+
+                        echo "Loading cosign private key from credentials..."
+                        cp $COSIGN_KEY ./cosign.key
+                        '''
+                        
+                        sh """
+                        echo "Signing frontend image..."
+                        COSIGN_PASSWORD="" ./cosign sign --key ./cosign.key --yes ${env.IMAGE_FRONTEND}:${env.TAG}
+
+                        echo "Cleaning up key file..."
+                        rm -f ./cosign.key ./cosign
+                        """
+                    }
+                }
+            }
+        }
+
+        // ✅ Cleanup old images
+        stage('Cleanup Old Images') {
+            steps {
+                script {
+                    sh """
+                    docker images "${env.IMAGE_FRONTEND}" --format "{{.Repository}}:{{.Tag}}" \
+                        | grep -v "${env.TAG}" | xargs -r docker rmi -f || true
+                    """
+                }
+            }
+        }
+
+        // ✅ Deploy using Ansible
+        stage('Deploy with Ansible') {
+            steps {
+                sh '''
+                ansible-playbook ansible/deploy.yml \
+                    -i ansible/inventory.ini \
+                    --tags "common,frontend" \
+                    --extra-vars "tag=$TAG \
+                        backend_port=${PORT} \
+                        db_host=${DB_HOST} \
+                        db_port=${DB_PORT} \
+                        db_user=${DB_USER} \
+                        db_password=${DB_PASSWORD} \
+                        db_name=${DB_NAME} \
+                        frontend_url=${FRONTEND_URL} \
+                        jwt_secret=${JWT_SECRET} \
+                        node_env=${NODE_ENV} \
+                        backend_repo=${IMAGE_BACKEND} \
+                        frontend_repo=${IMAGE_FRONTEND}"
+                '''
+            }
+        }
+    }
+}

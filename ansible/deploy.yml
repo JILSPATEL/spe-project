@@ -7,7 +7,11 @@
     frontend_image: "{{ frontend_repo }}:{{ tag }}"
 
   roles:
-    - common
-    - cleanup
-    - backend
-    - frontend
+    - role: common
+      tags: ['common']
+    - role: cleanup
+      tags: ['cleanup']
+    - role: backend
+      tags: ['backend']
+    - role: frontend
+      tags: ['frontend']

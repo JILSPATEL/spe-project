@@ -1,23 +1,43 @@
 ---
-# 4️⃣ Pull latest images (Backend)
-- name: Pull backend image
-  docker_image:
-    name: "{{ backend_image }}"
-    source: pull
+# Deploy all microservices
+- name: Set facts for microservices
+  set_fact:
+    services:
+      - name: user-service
+        port: 5001
+      - name: seller-service
+        port: 5002
+      - name: product-service
+        port: 5003
+      - name: cart-service
+        port: 5004
+      - name: order-service
+        port: 5005
+      - name: api-gateway
+        port: 5000
 
-# 5️⃣ Run backend
-- name: Run backend container
+- name: Pull microservice images
+  docker_image:
+    name: "{{ backend_repo }}-{{ item.name }}:{{ tag }}"
+    source: pull
+  loop: "{{ services }}"
+
+- name: Create custom network
+  docker_network:
+    name: app-net
+
+- name: Run microservice containers
   docker_container:
-    name: ecommerce_backend
-    image: "{{ backend_image }}"
+    name: "ecommerce_{{ item.name | replace('-', '_') }}"
+    image: "{{ backend_repo }}-{{ item.name }}:{{ tag }}"
     state: started
     restart_policy: always
     networks:
       - name: app-net
     published_ports:
-      - "{{ backend_port }}:{{ backend_port }}"
+      - "{{ item.port }}:{{ item.port }}"
     env:
-      PORT: "{{ backend_port }}"
+      PORT: "{{ item.port }}"
       DB_HOST: "{{ db_host }}"
       DB_PORT: "{{ db_port }}"
       DB_USER: "{{ db_user }}"
@@ -26,5 +46,11 @@
       FRONTEND_URL: "{{ frontend_url }}"
       JWT_SECRET: "{{ jwt_secret }}"
       NODE_ENV: "{{ node_env }}"
+      USER_SERVICE_URL: "http://ecommerce_user_service:5001"
+      SELLER_SERVICE_URL: "http://ecommerce_seller_service:5002"
+      PRODUCT_SERVICE_URL: "http://ecommerce_product_service:5003"
+      CART_SERVICE_URL: "http://ecommerce_cart_service:5004"
+      ORDER_SERVICE_URL: "http://ecommerce_order_service:5005"
     etc_hosts:
       host.docker.internal: "host-gateway"
+  loop: "{{ services }}"

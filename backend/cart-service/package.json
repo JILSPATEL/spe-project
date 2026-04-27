@@ -1,7 +1,7 @@
 {
-    "name": "ecommerce-backend",
+    "name": "cart-service",
     "version": "1.0.0",
-    "description": "Backend API for E-commerce Solution",
+    "description": "cart-service for E-commerce Solution",
     "main": "server.js",
     "scripts": {
         "start": "node server.js",

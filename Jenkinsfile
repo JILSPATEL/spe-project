@@ -3,6 +3,7 @@ pipeline {
 
     environment {
         TAG = "${BUILD_NUMBER}"
+        SERVICES = "user-service seller-service product-service cart-service order-service api-gateway"
     }
 
     stages {
@@ -36,66 +37,87 @@ pipeline {
         // ✅ SCA — Software Composition Analysis (dependency vulnerability check)
         stage('SCA') {
             steps {
-                sh '''
-                echo "Running SCA (npm audit) on Backend and Frontend..."
-                docker run --rm -v "$(pwd):/workspace" -w /workspace node:20 bash -c "
-                    echo 'SCA: Backend...' &&
-                    cd backend && npm install --include=dev && npm run sca &&
-                    echo 'SCA: Frontend...' &&
-                    cd ../frontend && npm install --include=dev && npm run sca
-                "
-                '''
+                script {
+                    def scaCmds = ""
+                    def servicesList = env.SERVICES.split(' ')
+                    for (int i = 0; i < servicesList.size(); i++) {
+                        def svc = servicesList[i]
+                        scaCmds += "echo 'SCA: ${svc}...' && cd backend/${svc} && npm install --include=dev && npm run sca && cd ../../ && "
+                    }
+                    scaCmds += "echo 'SCA: Frontend...' && cd frontend && npm install --include=dev && npm run sca"
+                    
+                    sh """
+                    echo "Running SCA (npm audit)..."
+                    docker run --rm -v "\$(pwd):/workspace" -w /workspace node:20 bash -c "${scaCmds}"
+                    """
+                }
             }
         }
 
         // ✅ SAST — Static Application Security Testing (source code analysis)
         stage('SAST') {
             steps {
-                sh '''
-                echo "Running SAST (ESLint security plugin) on Backend and Frontend..."
-                docker run --rm -v "$(pwd):/workspace" -w /workspace node:20 bash -c "
-                    echo 'SAST: Backend...' &&
-                    cd backend && npm install --include=dev && npm run sast &&
-                    echo 'SAST: Frontend...' &&
-                    cd ../frontend && npm install --include=dev && npm run sast
-                "
-                '''
+                script {
+                    def sastCmds = ""
+                    def servicesList = env.SERVICES.split(' ')
+                    for (int i = 0; i < servicesList.size(); i++) {
+                        def svc = servicesList[i]
+                        sastCmds += "echo 'SAST: ${svc}...' && cd backend/${svc} && npm install --include=dev && npm run sast && cd ../../ && "
+                    }
+                    sastCmds += "echo 'SAST: Frontend...' && cd frontend && npm install --include=dev && npm run sast"
+                    
+                    sh """
+                    echo "Running SAST (ESLint security plugin)..."
+                    docker run --rm -v "\$(pwd):/workspace" -w /workspace node:20 bash -c "${sastCmds}"
+                    """
+                }
             }
         }
 
-        // ✅ Build Docker images (required before container scan)
+        // ✅ Build Docker images
         stage('Build Images') {
             steps {
-                sh '''
-                echo "Building Docker images..."
-                docker build --no-cache -t $IMAGE_BACKEND:$TAG ./backend
-                docker build --no-cache -t $IMAGE_FRONTEND:$TAG ./frontend
-                '''
+                script {
+                    sh "echo 'Building Docker images...'"
+                    def servicesList = env.SERVICES.split(' ')
+                    for (int i = 0; i < servicesList.size(); i++) {
+                        def svc = servicesList[i]
+                        sh "docker build --no-cache -t ${env.IMAGE_BACKEND}-${svc}:${env.TAG} ./backend/${svc}"
+                    }
+                    sh "docker build --no-cache -t ${env.IMAGE_FRONTEND}:${env.TAG} ./frontend"
+                }
             }
         }
 
         // ✅ Container Scan — Trivy image vulnerability scan
         stage('Container Scan (Trivy)') {
             steps {
-                sh '''
-                echo "Running Trivy vulnerability scan on backend image..."
-                docker run --rm \
-                    -v /var/run/docker.sock:/var/run/docker.sock \
-                    aquasec/trivy:0.49.1 image \
-                    --severity CRITICAL,HIGH \
-                    --exit-code 1 \
-                    --no-progress \
-                    $IMAGE_BACKEND:$TAG || true
-
-                echo "Running Trivy vulnerability scan on frontend image..."
-                docker run --rm \
-                    -v /var/run/docker.sock:/var/run/docker.sock \
-                    aquasec/trivy:0.49.1 image \
-                    --severity CRITICAL,HIGH \
-                    --exit-code 1 \
-                    --no-progress \
-                    $IMAGE_FRONTEND:$TAG || true
-                '''
+                script {
+                    def servicesList = env.SERVICES.split(' ')
+                    for (int i = 0; i < servicesList.size(); i++) {
+                        def svc = servicesList[i]
+                        sh """
+                        echo "Running Trivy vulnerability scan on ${svc} image..."
+                        docker run --rm \
+                            -v /var/run/docker.sock:/var/run/docker.sock \
+                            aquasec/trivy:0.49.1 image \
+                            --severity CRITICAL,HIGH \
+                            --exit-code 1 \
+                            --no-progress \
+                            ${env.IMAGE_BACKEND}-${svc}:${env.TAG} || true
+                        """
+                    }
+                    sh """
+                    echo "Running Trivy vulnerability scan on frontend image..."
+                    docker run --rm \
+                        -v /var/run/docker.sock:/var/run/docker.sock \
+                        aquasec/trivy:0.49.1 image \
+                        --severity CRITICAL,HIGH \
+                        --exit-code 1 \
+                        --no-progress \
+                        ${env.IMAGE_FRONTEND}:${env.TAG} || true
+                    """
+                }
             }
         }
 
@@ -107,50 +129,71 @@ pipeline {
                     usernameVariable: 'USER',
                     passwordVariable: 'PASS'
                 )]) {
-                    sh '''
-                    echo $PASS | docker login -u $USER --password-stdin
-                    docker push $IMAGE_BACKEND:$TAG
-                    docker push $IMAGE_FRONTEND:$TAG
-                    '''
+                    script {
+                        sh "echo \$PASS | docker login -u \$USER --password-stdin"
+                        def servicesList = env.SERVICES.split(' ')
+                        for (int i = 0; i < servicesList.size(); i++) {
+                            def svc = servicesList[i]
+                            sh "docker push ${env.IMAGE_BACKEND}-${svc}:${env.TAG}"
+                        }
+                        sh "docker push ${env.IMAGE_FRONTEND}:${env.TAG}"
+                    }
                 }
             }
         }
 
-        // ✅ Sign Images — Cosign image signing (runs after push so registry digest is available)
+        // ✅ Sign Images — Cosign image signing
         stage('Sign Images') {
             steps {
                 withCredentials([file(credentialsId: 'cosign-key', variable: 'COSIGN_KEY')]) {
-                    sh '''
-                    echo "Installing Cosign to workspace..."
-                    curl -sSfL https://github.com/sigstore/cosign/releases/download/v2.2.1/cosign-linux-amd64 -o ./cosign
-                    chmod +x ./cosign
+                    script {
+                        sh '''
+                        echo "Installing Cosign to workspace..."
+                        curl -sSfL https://github.com/sigstore/cosign/releases/download/v2.2.1/cosign-linux-amd64 -o ./cosign
+                        chmod +x ./cosign
 
-                    echo "Loading cosign private key from credentials..."
-                    cp $COSIGN_KEY ./cosign.key
+                        echo "Loading cosign private key from credentials..."
+                        cp $COSIGN_KEY ./cosign.key
+                        '''
 
-                    echo "Signing backend image..."
-                    COSIGN_PASSWORD="" ./cosign sign --key ./cosign.key --yes $IMAGE_BACKEND:$TAG
+                        def servicesList = env.SERVICES.split(' ')
+                        for (int i = 0; i < servicesList.size(); i++) {
+                            def svc = servicesList[i]
+                            sh """
+                            echo "Signing ${svc} image..."
+                            COSIGN_PASSWORD="" ./cosign sign --key ./cosign.key --yes ${env.IMAGE_BACKEND}-${svc}:${env.TAG}
+                            """
+                        }
+                        
+                        sh """
+                        echo "Signing frontend image..."
+                        COSIGN_PASSWORD="" ./cosign sign --key ./cosign.key --yes ${env.IMAGE_FRONTEND}:${env.TAG}
 
-                    echo "Signing frontend image..."
-                    COSIGN_PASSWORD="" ./cosign sign --key ./cosign.key --yes $IMAGE_FRONTEND:$TAG
-
-                    echo "Cleaning up key file..."
-                    rm -f ./cosign.key ./cosign
-                    '''
+                        echo "Cleaning up key file..."
+                        rm -f ./cosign.key ./cosign
+                        """
+                    }
                 }
             }
         }
 
-        // ✅ Cleanup old images (keep only latest)
+        // ✅ Cleanup old images
         stage('Cleanup Old Images') {
             steps {
-                sh '''
-                docker images "$IMAGE_BACKEND" --format "{{.Repository}}:{{.Tag}}" \
-                    | grep -v "$TAG" | xargs -r docker rmi -f || true
-
-                docker images "$IMAGE_FRONTEND" --format "{{.Repository}}:{{.Tag}}" \
-                    | grep -v "$TAG" | xargs -r docker rmi -f || true
-                '''
+                script {
+                    def servicesList = env.SERVICES.split(' ')
+                    for (int i = 0; i < servicesList.size(); i++) {
+                        def svc = servicesList[i]
+                        sh """
+                        docker images "${env.IMAGE_BACKEND}-${svc}" --format "{{.Repository}}:{{.Tag}}" \
+                            | grep -v "${env.TAG}" | xargs -r docker rmi -f || true
+                        """
+                    }
+                    sh """
+                    docker images "${env.IMAGE_FRONTEND}" --format "{{.Repository}}:{{.Tag}}" \
+                        | grep -v "${env.TAG}" | xargs -r docker rmi -f || true
+                    """
+                }
             }
         }
 

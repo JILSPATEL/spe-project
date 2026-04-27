@@ -3,7 +3,6 @@
 This guide provides step-by-step instructions for implementing four critical security features: Rate Limiting, Container Scanning, SBOM Generation, and Image Signing.
 
 ---
-
 ## Table of Contents
 
 1. [Rate Limiting](#1-rate-limiting)

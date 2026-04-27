@@ -31,6 +31,7 @@
     name: "ecommerce_{{ item.name | replace('-', '_') }}"
     image: "{{ backend_repo }}-{{ item.name }}:{{ tag }}"
     state: started
+    recreate: yes
     restart_policy: always
     networks:
       - name: app-net

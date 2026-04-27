@@ -1,6 +1,19 @@
 ---
-# 2️⃣ Remove old containers
-- name: Remove backend container
+# 2️⃣ Remove old containers (microservices + legacy monolith)
+- name: Remove microservice containers
+  docker_container:
+    name: "ecommerce_{{ item | replace('-', '_') }}"
+    state: absent
+  loop:
+    - user-service
+    - seller-service
+    - product-service
+    - cart-service
+    - order-service
+    - api-gateway
+  ignore_errors: yes
+
+- name: Remove legacy backend container
   docker_container:
     name: ecommerce_backend
     state: absent
@@ -13,9 +26,16 @@
   ignore_errors: yes
 
 # 3️⃣ Remove old images
-- name: Remove old backend images
+- name: Remove old microservice images
   shell: |
-    docker images "{{ backend_repo }}" --format "{{ '{{.Repository}}:{{.Tag}}' }}" | grep -v "{{ tag }}" | xargs -r docker rmi -f
+    docker images "{{ backend_repo }}-{{ item }}" --format "{{ '{{.Repository}}:{{.Tag}}' }}" | grep -v "{{ tag }}" | xargs -r docker rmi -f
+  loop:
+    - user-service
+    - seller-service
+    - product-service
+    - cart-service
+    - order-service
+    - api-gateway
   ignore_errors: yes
 
 - name: Remove old frontend images

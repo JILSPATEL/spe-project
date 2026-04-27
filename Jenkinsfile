@@ -116,6 +116,31 @@ pipeline {
             }
         }
 
+        // ✅ Sign Images — Cosign image signing (runs after push so registry digest is available)
+        stage('Sign Images') {
+            steps {
+                withCredentials([file(credentialsId: 'cosign-key', variable: 'COSIGN_KEY')]) {
+                    sh '''
+                    echo "Installing Cosign to workspace..."
+                    curl -sSfL https://github.com/sigstore/cosign/releases/download/v2.2.1/cosign-linux-amd64 -o ./cosign
+                    chmod +x ./cosign
+
+                    echo "Loading cosign private key from credentials..."
+                    cp $COSIGN_KEY ./cosign.key
+
+                    echo "Signing backend image..."
+                    COSIGN_PASSWORD="" ./cosign sign --key ./cosign.key --yes $IMAGE_BACKEND:$TAG
+
+                    echo "Signing frontend image..."
+                    COSIGN_PASSWORD="" ./cosign sign --key ./cosign.key --yes $IMAGE_FRONTEND:$TAG
+
+                    echo "Cleaning up key file..."
+                    rm -f ./cosign.key ./cosign
+                    '''
+                }
+            }
+        }
+
         // ✅ Cleanup old images (keep only latest)
         stage('Cleanup Old Images') {
             steps {

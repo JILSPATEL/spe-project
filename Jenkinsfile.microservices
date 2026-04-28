@@ -22,7 +22,6 @@ pipeline {
             regexpFilterExpression: '.*backend/(user-service|seller-service|product-service|cart-service|order-service)/.*'
         )
     }
-
     stages {
 
         // ✅ Load .env file from Jenkins credentials

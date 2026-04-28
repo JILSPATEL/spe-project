@@ -22,7 +22,6 @@ pipeline {
             regexpFilterExpression: '.*frontend/.*'
         )
     }
-
     stages {
 
         // ✅ Load .env file from Jenkins credentials

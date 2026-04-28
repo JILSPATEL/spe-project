@@ -23,6 +23,7 @@ spec:
       containers:
         - name: api-gateway
           image: jilspatel/backend-api-gateway:latest
+          imagePullPolicy: Always
           ports:
             - containerPort: 5000
           env:
@@ -87,6 +88,7 @@ spec:
       containers:
         - name: frontend
           image: jilspatel/frontend:latest
+          imagePullPolicy: Always
           ports:
             - containerPort: 5173
           env:

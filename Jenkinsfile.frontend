@@ -114,6 +114,8 @@ pipeline {
                     script {
                         sh "echo \$PASS | docker login -u \$USER --password-stdin"
                         sh "docker push ${env.IMAGE_FRONTEND}:${env.TAG}"
+                        sh "docker tag ${env.IMAGE_FRONTEND}:${env.TAG} ${env.IMAGE_FRONTEND}:latest"
+                        sh "docker push ${env.IMAGE_FRONTEND}:latest"
                     }
                 }
             }

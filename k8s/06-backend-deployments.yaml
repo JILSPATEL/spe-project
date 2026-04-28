@@ -23,6 +23,7 @@ spec:
       containers:
         - name: user-service
           image: jilspatel/backend-user-service:latest
+          imagePullPolicy: Always
           ports:
             - containerPort: 5001
           env:
@@ -89,6 +90,7 @@ spec:
       containers:
         - name: seller-service
           image: jilspatel/backend-seller-service:latest
+          imagePullPolicy: Always
           ports:
             - containerPort: 5002
           env:
@@ -155,6 +157,7 @@ spec:
       containers:
         - name: product-service
           image: jilspatel/backend-product-service:latest
+          imagePullPolicy: Always
           ports:
             - containerPort: 5003
           env:
@@ -221,6 +224,7 @@ spec:
       containers:
         - name: cart-service
           image: jilspatel/backend-cart-service:latest
+          imagePullPolicy: Always
           ports:
             - containerPort: 5004
           env:
@@ -287,6 +291,7 @@ spec:
       containers:
         - name: order-service
           image: jilspatel/backend-order-service:latest
+          imagePullPolicy: Always
           ports:
             - containerPort: 5005
           env:

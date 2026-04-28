@@ -24,6 +24,14 @@ set -a
 source "$ENV_FILE"
 set +a
 
+# Auto-detect Minikube and use the correct DB host
+# In Minikube, host.docker.internal does not resolve - use host.minikube.internal instead
+K8S_DB_HOST="${DB_HOST}"
+if kubectl config current-context 2>/dev/null | grep -q "minikube"; then
+    echo "Minikube detected - using host.minikube.internal for DB_HOST"
+    K8S_DB_HOST="host.minikube.internal"
+fi
+
 # Step 1 - Generate ConfigMap YAML from .env values
 echo "Generating 01-config.yaml..."
 cat > "$SCRIPT_DIR/01-config.yaml" <<EOF
@@ -34,7 +42,7 @@ metadata:
   labels:
     app: ecommerce
 data:
-  DB_HOST: "${DB_HOST}"
+  DB_HOST: "${K8S_DB_HOST}"
   DB_PORT: "${DB_PORT}"
   DB_USER: "${DB_USER}"
   DB_NAME: "${DB_NAME}"

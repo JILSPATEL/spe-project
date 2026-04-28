@@ -193,7 +193,7 @@ pipeline {
                         def svc = servicesList[i]
                         sh """
                         docker images "${env.IMAGE_BACKEND}-${svc}" --format "{{.Repository}}:{{.Tag}}" \
-                            | grep -v "${env.TAG}" | xargs -r docker rmi -f || true
+                            | grep -v "${env.TAG}" | grep -v "latest" | xargs -r docker rmi -f || true
                         """
                     }
                 }

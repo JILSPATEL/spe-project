@@ -121,7 +121,7 @@ pipeline {
             }
         }
 
-        // ✅ Push to Docker Hub
+        // ✅ Push to Docker Hub (both versioned tag AND latest)
         stage('Push Images') {
             steps {
                 withCredentials([usernamePassword(
@@ -134,9 +134,17 @@ pipeline {
                         def servicesList = env.SERVICES.split(' ')
                         for (int i = 0; i < servicesList.size(); i++) {
                             def svc = servicesList[i]
+                            // Push versioned tag
                             sh "docker push ${env.IMAGE_BACKEND}-${svc}:${env.TAG}"
+                            // Tag and push :latest so Kubernetes always pulls the newest image
+                            sh "docker tag ${env.IMAGE_BACKEND}-${svc}:${env.TAG} ${env.IMAGE_BACKEND}-${svc}:latest"
+                            sh "docker push ${env.IMAGE_BACKEND}-${svc}:latest"
                         }
+                        // Push versioned tag
                         sh "docker push ${env.IMAGE_FRONTEND}:${env.TAG}"
+                        // Tag and push :latest
+                        sh "docker tag ${env.IMAGE_FRONTEND}:${env.TAG} ${env.IMAGE_FRONTEND}:latest"
+                        sh "docker push ${env.IMAGE_FRONTEND}:latest"
                     }
                 }
             }
@@ -177,7 +185,7 @@ pipeline {
             }
         }
 
-        // ✅ Cleanup old images
+        // ✅ Cleanup old images (keep current TAG and :latest)
         stage('Cleanup Old Images') {
             steps {
                 script {
@@ -186,12 +194,12 @@ pipeline {
                         def svc = servicesList[i]
                         sh """
                         docker images "${env.IMAGE_BACKEND}-${svc}" --format "{{.Repository}}:{{.Tag}}" \
-                            | grep -v "${env.TAG}" | xargs -r docker rmi -f || true
+                            | grep -v "${env.TAG}" | grep -v "latest" | xargs -r docker rmi -f || true
                         """
                     }
                     sh """
                     docker images "${env.IMAGE_FRONTEND}" --format "{{.Repository}}:{{.Tag}}" \
-                        | grep -v "${env.TAG}" | xargs -r docker rmi -f || true
+                        | grep -v "${env.TAG}" | grep -v "latest" | xargs -r docker rmi -f || true
                     """
                 }
             }

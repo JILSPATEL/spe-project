@@ -1,0 +1,86 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: api-gateway
+  labels:
+    app: ecommerce
+    component: api-gateway
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: api-gateway
+  template:
+    metadata:
+      labels:
+        app: api-gateway
+    spec:
+      containers:
+        - name: api-gateway
+          image: jilspatel/backend-api-gateway:latest
+          ports:
+            - containerPort: 5000
+          env:
+            - name: PORT
+              valueFrom:
+                configMapKeyRef:
+                  name: ecommerce-config
+                  key: PORT
+            - name: FRONTEND_URL
+              valueFrom:
+                configMapKeyRef:
+                  name: ecommerce-config
+                  key: FRONTEND_URL
+            - name: USER_SERVICE_URL
+              valueFrom:
+                configMapKeyRef:
+                  name: ecommerce-config
+                  key: USER_SERVICE_URL
+            - name: SELLER_SERVICE_URL
+              valueFrom:
+                configMapKeyRef:
+                  name: ecommerce-config
+                  key: SELLER_SERVICE_URL
+            - name: PRODUCT_SERVICE_URL
+              valueFrom:
+                configMapKeyRef:
+                  name: ecommerce-config
+                  key: PRODUCT_SERVICE_URL
+            - name: CART_SERVICE_URL
+              valueFrom:
+                configMapKeyRef:
+                  name: ecommerce-config
+                  key: CART_SERVICE_URL
+            - name: ORDER_SERVICE_URL
+              valueFrom:
+                configMapKeyRef:
+                  name: ecommerce-config
+                  key: ORDER_SERVICE_URL
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: frontend
+  labels:
+    app: ecommerce
+    component: frontend
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: frontend
+  template:
+    metadata:
+      labels:
+        app: frontend
+    spec:
+      containers:
+        - name: frontend
+          image: jilspatel/frontend:latest
+          ports:
+            - containerPort: 5173
+          env:
+            - name: VITE_API_URL
+              value: "/api"
+            - name: VITE_PROXY_TARGET
+              value: "http://api-gateway:5000"

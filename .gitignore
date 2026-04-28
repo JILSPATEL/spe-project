@@ -59,3 +59,7 @@ Thumbs.db
 .vscode/
 .idea/
 *.swp
+
+# ─── Kubernetes (generated from .env) ────
+k8s/01-config.yaml
+k8s/02-secret.yaml

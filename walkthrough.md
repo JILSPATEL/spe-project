@@ -162,3 +162,31 @@ bash k8s/deploy.sh
 | Generated config/secret (gitignored) | Each developer keeps their own `.env` — no credentials in git |
 | `imagePullPolicy: Always` | Ensures Kubernetes always pulls the latest image on pod restart |
 | Jenkins pushes both `:tag` and `:latest` | K8s deployments use `:latest` for simplicity |
+| Nginx for Frontend | Replaces Vite dev server to fix `EMFILE` file-watcher crashes and improve performance |
+
+---
+
+## Frontend Production Build (EMFILE Fix)
+
+The frontend deployment uses an optimized Nginx production server instead of the Vite dev server. This completely eliminates the file-watching mechanism that causes `EMFILE: too many open files` crashes in Kubernetes.
+
+### Key Refactors
+1. **`frontend/nginx.conf.template`**:
+   - Listens on port `5173`.
+   - Configures React Router fallback support (`try_files $uri $uri/ /index.html;`).
+   - Uses a dynamic API proxy (`proxy_pass ${VITE_PROXY_TARGET};`) to forward backend API calls to the `api-gateway`. Nginx automatically substitutes this using the `env` variables defined in `09-frontend-deploy.yaml`.
+2. **`frontend/Dockerfile` Upgrade**:
+   - Uses a **Multi-Stage Build**.
+   - **Stage 1 (builder)**: Installs dependencies and runs `npm run build` to create static assets.
+   - **Stage 2**: Copies only the built assets and Nginx configuration into a lightweight Nginx container.
+
+### Deploying Frontend Changes
+Whenever you update the frontend, manually build and push the new image:
+```bash
+cd frontend
+docker build -t jilspatel/frontend:latest .
+docker push jilspatel/frontend:latest
+
+# Restart the pods to pull the new image
+kubectl rollout restart deployment frontend
+```

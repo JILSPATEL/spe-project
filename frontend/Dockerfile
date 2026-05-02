@@ -1,4 +1,5 @@
-FROM node:20-alpine
+# Stage 1: Build the Vite application
+FROM node:20-alpine AS builder
 
 WORKDIR /app
 
@@ -6,7 +7,18 @@ COPY package.json package-lock.json ./
 RUN npm ci
 
 COPY . .
+RUN npm run build
+
+# Stage 2: Serve with Nginx
+FROM nginx:alpine
+
+# Remove default nginx static assets
+RUN rm -rf /usr/share/nginx/html/*
+
+# Copy built static files from builder stage
+COPY --from=builder /app/dist /usr/share/nginx/html
+
+# Copy the Nginx configuration template
+COPY nginx.conf.template /etc/nginx/templates/default.conf.template
 
 EXPOSE 5173
-
-CMD ["npm", "run", "dev"]

@@ -1,10 +1,10 @@
 apiVersion: apps/v1
 kind: Deployment
 metadata:
-  name: cart-service
+  name: seller-service
   labels:
     app: ecommerce
-    component: cart-service
+    component: seller-service
 spec:
   replicas: 1
   strategy:
@@ -14,21 +14,28 @@ spec:
       maxSurge: 1
   selector:
     matchLabels:
-      app: cart-service
+      app: seller-service
   template:
     metadata:
       labels:
-        app: cart-service
+        app: seller-service
     spec:
       containers:
-        - name: cart-service
-          image: jilspatel/backend-cart-service:latest
+        - name: seller-service
+          image: jilspatel/backend-seller-service:latest
           imagePullPolicy: Always
           ports:
-            - containerPort: 5004
+            - containerPort: 5002
+          resources:
+            requests:
+              cpu: "100m"
+              memory: "128Mi"
+            limits:
+              cpu: "500m"
+              memory: "256Mi"
           env:
             - name: PORT
-              value: "5004"
+              value: "5002"
             - name: DB_HOST
               valueFrom:
                 configMapKeyRef:

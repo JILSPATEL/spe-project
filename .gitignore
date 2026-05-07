@@ -61,5 +61,7 @@ Thumbs.db
 *.swp
 
 # ─── Kubernetes (generated from .env) ────
-k8s/01-config.yaml
-k8s/02-secret.yaml
+k8s/configmap/01-config.yaml
+k8s/secret/02-secret.yaml
+
+KUBERNETES_ISSUES_AND_SOLUTIONS.md

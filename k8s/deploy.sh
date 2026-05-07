@@ -2,7 +2,8 @@
 
 # ──────────────────────────────────────────────────
 # Kubernetes Deployment Script
-# Reads .env file and deploys all resources
+# Reads .env file, generates config/secret in their
+# respective subdirectories, then deploys everything.
 # ──────────────────────────────────────────────────
 
 set -e
@@ -33,8 +34,8 @@ if kubectl config current-context 2>/dev/null | grep -q "minikube"; then
 fi
 
 # Step 1 - Generate ConfigMap YAML from .env values
-echo "Generating 01-config.yaml..."
-cat > "$SCRIPT_DIR/01-config.yaml" <<EOF
+echo "Generating configmap/01-config.yaml..."
+cat > "$SCRIPT_DIR/configmap/01-config.yaml" <<EOF
 apiVersion: v1
 kind: ConfigMap
 metadata:
@@ -57,8 +58,8 @@ data:
 EOF
 
 # Step 2 - Generate Secret YAML from .env values
-echo "Generating 02-secret.yaml..."
-cat > "$SCRIPT_DIR/02-secret.yaml" <<EOF
+echo "Generating secret/02-secret.yaml..."
+cat > "$SCRIPT_DIR/secret/02-secret.yaml" <<EOF
 apiVersion: v1
 kind: Secret
 metadata:
@@ -71,14 +72,32 @@ stringData:
   JWT_SECRET: "${JWT_SECRET}"
 EOF
 
-# Step 3 - Apply everything
-echo "Applying all Kubernetes manifests..."
-kubectl apply -f "$SCRIPT_DIR/"
+# Step 3 - Apply everything in dependency order
+echo ""
+echo "Applying Kubernetes manifests..."
+
+echo "  [1/5] Applying ConfigMap..."
+kubectl apply -f "$SCRIPT_DIR/configmap/"
+
+echo "  [2/5] Applying Secrets..."
+kubectl apply -f "$SCRIPT_DIR/secret/"
+
+echo "  [3/5] Applying Deployments..."
+kubectl apply -f "$SCRIPT_DIR/deployment/"
+
+echo "  [4/5] Applying Services..."
+kubectl apply -f "$SCRIPT_DIR/service/"
+
+echo "  [5/5] Applying HPAs..."
+kubectl apply -f "$SCRIPT_DIR/hpa/"
 
 echo ""
-echo "Deployment complete!"
+echo "✅ Deployment complete!"
 echo "Run 'kubectl get pods' to check pod status."
 echo ""
 echo "Access the application at:"
-echo "  Frontend - http://localhost:30001"
+echo "  Frontend  - http://localhost:30001"
 echo "  (For Minikube run: minikube service frontend --url)"
+echo ""
+echo "Check HPA status with:"
+echo "  kubectl get hpa"

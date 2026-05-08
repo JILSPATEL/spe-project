@@ -22,7 +22,7 @@ spec:
     spec:
       containers:
         - name: seller-service
-          image: jilspatel/backend-seller-service:latest
+          image: speecommproject/backend-seller-service:latest
           imagePullPolicy: Always
           ports:
             - containerPort: 5002

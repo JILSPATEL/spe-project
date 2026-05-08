@@ -22,7 +22,7 @@ spec:
     spec:
       containers:
         - name: user-service
-          image: jilspatel/backend-user-service:latest
+          image: speecommproject/backend-user-service:latest
           imagePullPolicy: Always
           ports:
             - containerPort: 5001

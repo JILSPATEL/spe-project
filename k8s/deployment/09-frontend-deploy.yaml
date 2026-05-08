@@ -22,7 +22,7 @@ spec:
     spec:
       containers:
         - name: frontend
-          image: jilspatel/frontend:latest
+          image: speecommproject/frontend:latest
           imagePullPolicy: Always
           ports:
             - containerPort: 5173

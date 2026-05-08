@@ -22,7 +22,7 @@ spec:
     spec:
       containers:
         - name: order-service
-          image: jilspatel/backend-order-service:latest
+          image: speecommproject/backend-order-service:latest
           imagePullPolicy: Always
           ports:
             - containerPort: 5005

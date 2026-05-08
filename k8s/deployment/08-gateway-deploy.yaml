@@ -22,7 +22,7 @@ spec:
     spec:
       containers:
         - name: api-gateway
-          image: jilspatel/backend-api-gateway:latest
+          image: speecommproject/backend-api-gateway:latest
           imagePullPolicy: Always
           ports:
             - containerPort: 5000

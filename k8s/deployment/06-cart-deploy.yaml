@@ -22,7 +22,7 @@ spec:
     spec:
       containers:
         - name: cart-service
-          image: jilspatel/backend-cart-service:latest
+          image: speecommproject/backend-cart-service:latest
           imagePullPolicy: Always
           ports:
             - containerPort: 5004

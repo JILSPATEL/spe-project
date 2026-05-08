@@ -18,7 +18,11 @@ RUN rm -rf /usr/share/nginx/html/*
 # Copy built static files from builder stage
 COPY --from=builder /app/dist /usr/share/nginx/html
 
-# Copy the Nginx configuration template
-COPY nginx.conf.template /etc/nginx/templates/default.conf.template
+# Copy the Nginx configuration template to a staging location
+COPY nginx.conf.template /etc/nginx/nginx.conf.template
 
 EXPOSE 5173
+
+# Override CMD: run envsubst on ONLY ${VITE_PROXY_TARGET} so nginx variables
+# like $uri, $host, $remote_addr are NOT touched, then start nginx.
+CMD ["/bin/sh", "-c", "envsubst '${VITE_PROXY_TARGET}' < /etc/nginx/nginx.conf.template > /etc/nginx/conf.d/default.conf && nginx -g 'daemon off;'"]

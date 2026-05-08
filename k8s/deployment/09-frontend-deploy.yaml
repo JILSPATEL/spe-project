@@ -24,6 +24,9 @@ spec:
         - name: frontend
           image: speecommproject/frontend:latest
           imagePullPolicy: Always
+          command: ["/bin/sh", "-c"]
+          args:
+            - sed 's#proxy_pass ${VITE_PROXY_TARGET}/;#proxy_pass ${VITE_PROXY_TARGET};#' /etc/nginx/nginx.conf.template | envsubst '${VITE_PROXY_TARGET}' > /etc/nginx/conf.d/default.conf && nginx -g 'daemon off;'
           ports:
             - containerPort: 5173
           resources:

@@ -13,7 +13,7 @@
     "security": "npm run sca && npm run sast"
   },
   "dependencies": {
-    "axios": "^1.13.2",
+    "axios": "^1.16.0",
     "react": "^19.2.0",
     "react-dom": "^19.2.0",
     "react-router-dom": "^7.10.1"

@@ -46,6 +46,15 @@ pipeline {
                         env.FRONTEND_URL = props.FRONTEND_URL
                         env.JWT_SECRET = props.JWT_SECRET
                         env.NODE_ENV = props.NODE_ENV
+
+                        if (!env.IMAGE_BACKEND?.contains('/')) {
+                            error "IMAGE_BACKEND must include a Docker Hub namespace, e.g. speecommproject/backend"
+                        }
+                        if (!env.DOCKERHUB_CREDENTIALS) {
+                            error "JENKINS_CREDENTIALS_ID is missing from the env-file Jenkins credential"
+                        }
+                        echo "Docker credential id: ${env.DOCKERHUB_CREDENTIALS}"
+                        echo "Backend image prefix: ${env.IMAGE_BACKEND}"
                     }
                 }
             }
@@ -135,6 +144,14 @@ pipeline {
                 )]) {
                     script {
                         sh "echo \$PASS | docker login -u \$USER --password-stdin"
+                        sh '''
+                        BACKEND_NAMESPACE="${IMAGE_BACKEND%%/*}"
+                        echo "Docker login user: $USER"
+                        echo "Backend image namespace: $BACKEND_NAMESPACE"
+                        if [ "$BACKEND_NAMESPACE" != "$USER" ]; then
+                            echo "WARNING: Docker login user and image namespace differ. The credential must have write access to this namespace."
+                        fi
+                        '''
                         def servicesList = env.SERVICES.split(' ')
                         for (int i = 0; i < servicesList.size(); i++) {
                             def svc = servicesList[i]

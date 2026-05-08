@@ -1,6 +1,10 @@
 pipeline {
     agent any
 
+    options {
+        skipDefaultCheckout(true)
+    }
+
     environment {
         TAG = "${BUILD_NUMBER}"
         SERVICES = "frontend"
@@ -23,6 +27,13 @@ pipeline {
         )
     }
     stages {
+        stage('Checkout SCM') {
+            steps {
+                retry(3) {
+                    checkout scm
+                }
+            }
+        }
 
         // ✅ Load .env file from Jenkins credentials
         stage('Load Env') {
@@ -120,7 +131,9 @@ pipeline {
                     passwordVariable: 'PASS'
                 )]) {
                     script {
-                        sh "echo \$PASS | docker login -u \$USER --password-stdin"
+                        retry(3) {
+                            sh "echo \$PASS | docker login -u \$USER --password-stdin"
+                        }
                         sh '''
                         FRONTEND_NAMESPACE="${IMAGE_FRONTEND%%/*}"
                         echo "Docker login user: $USER"
@@ -129,9 +142,13 @@ pipeline {
                             echo "WARNING: Docker login user and image namespace differ. The credential must have write access to this namespace."
                         fi
                         '''
-                        sh "docker push ${env.IMAGE_FRONTEND}:${env.TAG}"
+                        retry(3) {
+                            sh "docker push ${env.IMAGE_FRONTEND}:${env.TAG}"
+                        }
                         sh "docker tag ${env.IMAGE_FRONTEND}:${env.TAG} ${env.IMAGE_FRONTEND}:latest"
-                        sh "docker push ${env.IMAGE_FRONTEND}:latest"
+                        retry(3) {
+                            sh "docker push ${env.IMAGE_FRONTEND}:latest"
+                        }
                     }
                 }
             }

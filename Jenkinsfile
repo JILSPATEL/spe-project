@@ -1,12 +1,23 @@
 pipeline {
     agent any
 
+    options {
+        skipDefaultCheckout(true)
+    }
+
     environment {
         TAG = "${BUILD_NUMBER}"
         SERVICES = "user-service seller-service product-service cart-service order-service api-gateway"
     }
 
     stages {
+        stage('Checkout SCM') {
+            steps {
+                retry(3) {
+                    checkout scm
+                }
+            }
+        }
 
         // ✅ Load .env file from Jenkins credentials
         stage('Load Env') {
@@ -143,7 +154,9 @@ pipeline {
                     passwordVariable: 'PASS'
                 )]) {
                     script {
-                        sh "echo \$PASS | docker login -u \$USER --password-stdin"
+                        retry(3) {
+                            sh "echo \$PASS | docker login -u \$USER --password-stdin"
+                        }
                         sh '''
                         BACKEND_NAMESPACE="${IMAGE_BACKEND%%/*}"
                         FRONTEND_NAMESPACE="${IMAGE_FRONTEND%%/*}"
@@ -158,16 +171,24 @@ pipeline {
                         for (int i = 0; i < servicesList.size(); i++) {
                             def svc = servicesList[i]
                             // Push versioned tag
-                            sh "docker push ${env.IMAGE_BACKEND}-${svc}:${env.TAG}"
+                            retry(3) {
+                                sh "docker push ${env.IMAGE_BACKEND}-${svc}:${env.TAG}"
+                            }
                             // Tag and push :latest so Kubernetes always pulls the newest image
                             sh "docker tag ${env.IMAGE_BACKEND}-${svc}:${env.TAG} ${env.IMAGE_BACKEND}-${svc}:latest"
-                            sh "docker push ${env.IMAGE_BACKEND}-${svc}:latest"
+                            retry(3) {
+                                sh "docker push ${env.IMAGE_BACKEND}-${svc}:latest"
+                            }
                         }
                         // Push versioned tag
-                        sh "docker push ${env.IMAGE_FRONTEND}:${env.TAG}"
+                        retry(3) {
+                            sh "docker push ${env.IMAGE_FRONTEND}:${env.TAG}"
+                        }
                         // Tag and push :latest
                         sh "docker tag ${env.IMAGE_FRONTEND}:${env.TAG} ${env.IMAGE_FRONTEND}:latest"
-                        sh "docker push ${env.IMAGE_FRONTEND}:latest"
+                        retry(3) {
+                            sh "docker push ${env.IMAGE_FRONTEND}:latest"
+                        }
                     }
                 }
             }

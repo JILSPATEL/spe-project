@@ -6,9 +6,11 @@ metadata:
     app: ecommerce
     component: user-service
 spec:
+  type: NodePort
   selector:
     app: user-service
   ports:
     - port: 5001
       targetPort: 5001
+      nodePort: 30011
       protocol: TCP

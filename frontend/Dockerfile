@@ -23,6 +23,6 @@ COPY nginx.conf.template /etc/nginx/nginx.conf.template
 
 EXPOSE 5173
 
-# Override CMD: run envsubst on ONLY ${VITE_PROXY_TARGET} so nginx variables
+# Override CMD: run envsubst only on our placeholders so nginx variables
 # like $uri, $host, $remote_addr are NOT touched, then start nginx.
-CMD ["/bin/sh", "-c", "envsubst '${VITE_PROXY_TARGET}' < /etc/nginx/nginx.conf.template > /etc/nginx/conf.d/default.conf && nginx -g 'daemon off;'"]
+CMD ["/bin/sh", "-c", "export API_GATEWAY_URL=${VITE_PROXY_TARGET:-http://${API_GATEWAY_SERVICE_HOST:-api-gateway}:${API_GATEWAY_SERVICE_PORT:-5000}} && envsubst '${API_GATEWAY_URL}' < /etc/nginx/nginx.conf.template > /etc/nginx/conf.d/default.conf && nginx -g 'daemon off;'"]

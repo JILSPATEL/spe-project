@@ -6,9 +6,11 @@ metadata:
     app: ecommerce
     component: seller-service
 spec:
+  type: NodePort
   selector:
     app: seller-service
   ports:
     - port: 5002
       targetPort: 5002
+      nodePort: 30012
       protocol: TCP

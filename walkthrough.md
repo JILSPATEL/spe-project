@@ -143,8 +143,8 @@ kubectl get pods --watch
 kubectl get hpa
 
 # 5. Open the application
-minikube service frontend --url
-# Open the printed URL in your browser
+./k8s/setup-minikube-route.sh
+# Open the printed link in your browser
 ```
 
 ---
@@ -348,11 +348,8 @@ minikube addons list
 # Get the IP of the Minikube VM
 minikube ip
 
-# Open a NodePort service in the browser
-minikube service frontend
-
-# Get the URL of a service without opening browser
-minikube service frontend --url
+# Get the frontend link without the Docker-driver tunnel warning
+./k8s/setup-minikube-route.sh
 
 # SSH into the Minikube node
 minikube ssh
@@ -546,7 +543,7 @@ The frontend deployment uses an optimized Nginx production server instead of the
 1. **`frontend/nginx.conf.template`**:
    - Listens on port `5173`.
    - Configures React Router fallback support (`try_files $uri $uri/ /index.html;`).
-   - Uses a dynamic API proxy (`proxy_pass ${VITE_PROXY_TARGET};`) to forward backend API calls to the `api-gateway`. Nginx automatically substitutes this using the `env` variables defined in `deployment/09-frontend-deploy.yaml`.
+   - Uses a dynamic API proxy with Kubernetes DNS resolution to forward backend API calls to the `api-gateway`. Nginx automatically substitutes this using the `env` variables defined in `deployment/09-frontend-deploy.yaml`.
 2. **`frontend/Dockerfile` Upgrade**:
    - Uses a **Multi-Stage Build**.
    - **Stage 1 (builder)**: Installs dependencies and runs `npm run build` to create static assets.

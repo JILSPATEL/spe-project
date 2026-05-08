@@ -13,14 +13,14 @@ app.use(cors({
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
 
-// Routes
-const routes = require('./routes/productRoutes');
-app.use('/api/products', routes);
-
 // Health check
 app.get('/api/products/health', (req, res) => {
     res.json({ status: 'OK', message: 'product-service is running' });
 });
+
+// Routes
+const routes = require('./routes/productRoutes');
+app.use('/api/products', routes);
 
 // 404 handler
 app.use((req, res) => {

@@ -35,37 +35,23 @@ spec:
               memory: "256Mi"
           env:
             - name: PORT
-              valueFrom:
-                configMapKeyRef:
-                  name: ecommerce-config
-                  key: PORT
+              value: "5000"
             - name: FRONTEND_URL
               valueFrom:
                 configMapKeyRef:
                   name: ecommerce-config
                   key: FRONTEND_URL
+            - name: NODE_IP
+              valueFrom:
+                fieldRef:
+                  fieldPath: status.hostIP
             - name: USER_SERVICE_URL
-              valueFrom:
-                configMapKeyRef:
-                  name: ecommerce-config
-                  key: USER_SERVICE_URL
+              value: "http://$(NODE_IP):30011"
             - name: SELLER_SERVICE_URL
-              valueFrom:
-                configMapKeyRef:
-                  name: ecommerce-config
-                  key: SELLER_SERVICE_URL
+              value: "http://$(NODE_IP):30012"
             - name: PRODUCT_SERVICE_URL
-              valueFrom:
-                configMapKeyRef:
-                  name: ecommerce-config
-                  key: PRODUCT_SERVICE_URL
+              value: "http://$(NODE_IP):30013"
             - name: CART_SERVICE_URL
-              valueFrom:
-                configMapKeyRef:
-                  name: ecommerce-config
-                  key: CART_SERVICE_URL
+              value: "http://$(NODE_IP):30014"
             - name: ORDER_SERVICE_URL
-              valueFrom:
-                configMapKeyRef:
-                  name: ecommerce-config
-                  key: ORDER_SERVICE_URL
+              value: "http://$(NODE_IP):30015"

@@ -6,9 +6,11 @@ metadata:
     app: ecommerce
     component: order-service
 spec:
+  type: NodePort
   selector:
     app: order-service
   ports:
     - port: 5005
       targetPort: 5005
+      nodePort: 30015
       protocol: TCP

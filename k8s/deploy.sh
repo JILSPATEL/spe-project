@@ -29,8 +29,8 @@ set +a
 # In Minikube, host.docker.internal does not resolve - use host.minikube.internal instead
 K8S_DB_HOST="${DB_HOST}"
 if kubectl config current-context 2>/dev/null | grep -q "minikube"; then
-    echo "Minikube detected - using host.minikube.internal for DB_HOST"
-    K8S_DB_HOST="host.minikube.internal"
+    echo "Minikube detected - using reachable host bridge for DB_HOST"
+    K8S_DB_HOST="${MINIKUBE_DB_HOST:-172.18.0.1}"
 fi
 
 # Step 1 - Generate ConfigMap YAML from .env values
@@ -82,22 +82,29 @@ kubectl apply -f "$SCRIPT_DIR/configmap/"
 echo "  [2/5] Applying Secrets..."
 kubectl apply -f "$SCRIPT_DIR/secret/"
 
-echo "  [3/5] Applying Deployments..."
-kubectl apply -f "$SCRIPT_DIR/deployment/"
-
-echo "  [4/5] Applying Services..."
+echo "  [3/5] Applying Services..."
 kubectl apply -f "$SCRIPT_DIR/service/"
+
+echo "  [4/5] Applying Deployments..."
+kubectl apply -f "$SCRIPT_DIR/deployment/"
 
 echo "  [5/5] Applying HPAs..."
 kubectl apply -f "$SCRIPT_DIR/hpa/"
+
+echo ""
+echo "Waiting for frontend rollout..."
+kubectl rollout status deployment/frontend --timeout=120s
 
 echo ""
 echo "✅ Deployment complete!"
 echo "Run 'kubectl get pods' to check pod status."
 echo ""
 echo "Access the application at:"
-echo "  Frontend  - http://localhost:30001"
-echo "  (For Minikube run: minikube service frontend --url)"
+if kubectl config current-context 2>/dev/null | grep -q "minikube" && command -v minikube >/dev/null 2>&1; then
+    "$SCRIPT_DIR/setup-minikube-route.sh" || echo "  Frontend  - http://localhost:30001"
+else
+    echo "  Frontend  - http://localhost:30001"
+fi
 echo ""
 echo "Check HPA status with:"
 echo "  kubectl get hpa"

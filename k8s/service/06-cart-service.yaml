@@ -6,9 +6,11 @@ metadata:
     app: ecommerce
     component: cart-service
 spec:
+  type: NodePort
   selector:
     app: cart-service
   ports:
     - port: 5004
       targetPort: 5004
+      nodePort: 30014
       protocol: TCP

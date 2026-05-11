@@ -146,7 +146,3 @@ ecommerce_solution/
 - **User**: Browse products, search, view details, authentication.
 - **Seller**: Add/manage products and view seller orders.
 - **Security**: JWT-based auth, sellers can access only their data.
-
-=======
-# spe-project
->>>>>>> a27c600536729b20ccb1eebba88d56176869c019

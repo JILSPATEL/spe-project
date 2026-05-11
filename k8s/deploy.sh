@@ -108,3 +108,16 @@ fi
 echo ""
 echo "Check HPA status with:"
 echo "  kubectl get hpa"
+
+# ── Step 6 — Deploy monitoring stack (Prometheus + Grafana) ──
+if [[ "$*" != *"--skip-monitoring"* ]]; then
+    echo ""
+    echo "─────────────────────────────────────────────────"
+    echo "  [6/6] Deploying monitoring stack (Prometheus + Grafana)..."
+    chmod +x "$SCRIPT_DIR/monitoring/deploy-monitoring.sh"
+    "$SCRIPT_DIR/monitoring/deploy-monitoring.sh"
+else
+    echo ""
+    echo "  Skipping monitoring deployment (--skip-monitoring flag set)."
+    echo "  To deploy monitoring later: ./k8s/monitoring/deploy-monitoring.sh"
+fi

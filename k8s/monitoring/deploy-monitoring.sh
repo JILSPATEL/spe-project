@@ -41,13 +41,7 @@ kubectl apply -f "$SCRIPT_DIR/06-node-exporter.yaml"
 # ── Step 6: Grafana ───────────────────────────────────────────
 echo "  [6/6] Deploying Grafana (datasource + dashboards + app)..."
 
-# Dynamically update the Prometheus URL in the datasource CM to the current Minikube IP
-MINIKUBE_IP=$(minikube ip 2>/dev/null || echo "127.0.0.1")
-sed "s/REPLACE_WITH_MINIKUBE_IP/$MINIKUBE_IP/g" "$SCRIPT_DIR/07-grafana-datasource.yaml" > "$SCRIPT_DIR/07-grafana-datasource.tmp.yaml"
-
-kubectl apply -f "$SCRIPT_DIR/07-grafana-datasource.tmp.yaml"
-rm "$SCRIPT_DIR/07-grafana-datasource.tmp.yaml"
-
+kubectl apply -f "$SCRIPT_DIR/07-grafana-datasource.yaml"
 kubectl apply -f "$SCRIPT_DIR/08-grafana-dashboard-provider.yaml"
 kubectl apply -f "$SCRIPT_DIR/09-grafana-dashboard-cm.yaml"
 kubectl apply -f "$SCRIPT_DIR/10-grafana-deploy.yaml"

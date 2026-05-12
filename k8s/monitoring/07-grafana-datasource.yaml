@@ -13,7 +13,7 @@ data:
         type: prometheus
         uid: prometheus
         access: proxy
-        url: http://REPLACE_WITH_MINIKUBE_IP:32090
+        url: http://prometheus:9090
         isDefault: true
         editable: true
         jsonData:

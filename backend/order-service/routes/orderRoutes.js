@@ -6,6 +6,14 @@ const authMiddleware = require('../middleware/auth');
 const sellerAuthMiddleware = require('../middleware/sellerAuth');
 const { body, validationResult } = require('express-validator');
 
+// Health check
+router.get('/health', (req, res) => {
+    res.status(200).json({
+        status: 'OK',
+        message: 'order-service running'
+    });
+});
+
 // Create new order
 router.post(
     '/',
@@ -20,6 +28,7 @@ router.post(
     async (req, res) => {
         try {
             const errors = validationResult(req);
+
             if (!errors.isEmpty()) {
                 return res.status(400).json({ errors: errors.array() });
             }
@@ -35,7 +44,10 @@ router.post(
             }
 
             // Calculate total
-            const totalPrice = cartItems.reduce((sum, item) => sum + (item.price * item.quantity), 0);
+            const totalPrice = cartItems.reduce(
+                (sum, item) => sum + (item.price * item.quantity),
+                0
+            );
 
             // Create order
             const orderData = {
@@ -51,7 +63,7 @@ router.post(
 
             const { orderId } = await Order.create(orderData);
 
-            // Clear cart but do not release inventory (already deducted by Order.create)
+            // Clear cart but do not release inventory
             await Cart.clearCart(userId, false);
 
             res.status(201).json({
@@ -60,7 +72,9 @@ router.post(
             });
         } catch (error) {
             console.error('Create order error:', error);
-            res.status(500).json({ message: 'Server error creating order' });
+            res.status(500).json({
+                message: 'Server error creating order',
+            });
         }
     }
 );
@@ -70,10 +84,27 @@ router.get('/my-orders', authMiddleware, async (req, res) => {
     try {
         const userId = req.user.id;
         const orders = await Order.getByUser(userId);
+
         res.json(orders);
     } catch (error) {
         console.error('Get orders error:', error);
-        res.status(500).json({ message: 'Server error fetching orders' });
+        res.status(500).json({
+            message: 'Server error fetching orders',
+        });
+    }
+});
+
+// Get seller's orders
+router.get('/seller/all', sellerAuthMiddleware, async (req, res) => {
+    try {
+        const orders = await Order.findBySellerId(req.seller.id);
+
+        res.json(orders);
+    } catch (error) {
+        console.error('Get seller orders error:', error);
+        res.status(500).json({
+            message: 'Server error fetching orders',
+        });
     }
 });
 
@@ -84,29 +115,24 @@ router.get('/:orderId', authMiddleware, async (req, res) => {
         const order = await Order.getById(orderId);
 
         if (!order) {
-            return res.status(404).json({ message: 'Order not found' });
+            return res.status(404).json({
+                message: 'Order not found',
+            });
         }
 
         // Check if order belongs to user
         if (order.user_id !== req.user.id) {
-            return res.status(403).json({ message: 'Access denied' });
+            return res.status(403).json({
+                message: 'Access denied',
+            });
         }
 
         res.json(order);
     } catch (error) {
         console.error('Get order error:', error);
-        res.status(500).json({ message: 'Server error fetching order' });
-    }
-});
-
-// Get seller's orders
-router.get('/seller/all', sellerAuthMiddleware, async (req, res) => {
-    try {
-        const orders = await Order.findBySellerId(req.seller.id);
-        res.json(orders);
-    } catch (error) {
-        console.error('Get seller orders error:', error);
-        res.status(500).json({ message: 'Server error fetching orders' });
+        res.status(500).json({
+            message: 'Server error fetching order',
+        });
     }
 });
 
@@ -116,21 +142,37 @@ router.put('/:orderId/status', sellerAuthMiddleware, async (req, res) => {
         const { orderId } = req.params;
         const { status } = req.body;
 
-        const validStatuses = ['Pending', 'Confirmed', 'Packed', 'Shipped', 'Delivered', 'Cancelled'];
+        const validStatuses = [
+            'Pending',
+            'Confirmed',
+            'Packed',
+            'Shipped',
+            'Delivered',
+            'Cancelled',
+        ];
+
         if (!validStatuses.includes(status)) {
-            return res.status(400).json({ message: 'Invalid status' });
+            return res.status(400).json({
+                message: 'Invalid status',
+            });
         }
 
         const updated = await Order.updateStatus(orderId, status);
 
         if (!updated) {
-            return res.status(404).json({ message: 'Order not found' });
+            return res.status(404).json({
+                message: 'Order not found',
+            });
         }
 
-        res.json({ message: 'Order status updated successfully' });
+        res.json({
+            message: 'Order status updated successfully',
+        });
     } catch (error) {
         console.error('Update order status error:', error);
-        res.status(500).json({ message: 'Server error updating order' });
+        res.status(500).json({
+            message: 'Server error updating order',
+        });
     }
 });
 
@@ -143,27 +185,41 @@ router.put('/:orderId/cancel', authMiddleware, async (req, res) => {
         const order = await Order.getById(orderId);
 
         if (!order) {
-            return res.status(404).json({ message: 'Order not found' });
+            return res.status(404).json({
+                message: 'Order not found',
+            });
         }
 
         if (order.user_id !== userId) {
-            return res.status(403).json({ message: 'Access denied' });
+            return res.status(403).json({
+                message: 'Access denied',
+            });
         }
 
-        if (['Delivered', 'Cancelled'].includes(order.order_status)) {
-            return res.status(400).json({ message: 'Order cannot be cancelled' });
+        if (
+            ['Delivered', 'Cancelled'].includes(order.order_status)
+        ) {
+            return res.status(400).json({
+                message: 'Order cannot be cancelled',
+            });
         }
 
         const cancelled = await Order.cancelOrder(orderId);
 
         if (cancelled) {
-            res.json({ message: 'Order cancelled successfully' });
+            res.json({
+                message: 'Order cancelled successfully',
+            });
         } else {
-            res.status(500).json({ message: 'Failed to cancel order' });
+            res.status(500).json({
+                message: 'Failed to cancel order',
+            });
         }
     } catch (error) {
         console.error('Cancel order error:', error);
-        res.status(500).json({ message: 'Server error cancelling order' });
+        res.status(500).json({
+            message: 'Server error cancelling order',
+        });
     }
 });
 

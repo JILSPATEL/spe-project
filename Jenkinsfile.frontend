@@ -94,6 +94,18 @@ pipeline {
             }
         }
 
+        // ✅ Unit Tests — Vitest
+        stage('Unit Tests') {
+            steps {
+                script {
+                    sh """
+                    echo "Running Frontend Unit Tests..."
+                    docker run --rm -v "\$(pwd):/workspace" -w /workspace node:20 bash -c "echo 'Unit Test: Frontend...' && cd frontend && npm install --include=dev && npm test"
+                    """
+                }
+            }
+        }
+
         // ✅ Build Docker images
         stage('Build Images') {
             steps {

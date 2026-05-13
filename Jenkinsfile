@@ -98,6 +98,26 @@ pipeline {
             }
         }
 
+        // ✅ Unit Tests — Jest (backend) + Vitest (frontend)
+        stage('Unit Tests') {
+            steps {
+                script {
+                    def testCmds = ""
+                    def servicesList = env.SERVICES.split(' ')
+                    for (int i = 0; i < servicesList.size(); i++) {
+                        def svc = servicesList[i]
+                        testCmds += "echo 'Unit Test: ${svc}...' && cd backend/${svc} && npm install --include=dev && npm test && cd ../../ && "
+                    }
+                    testCmds += "echo 'Unit Test: Frontend...' && cd frontend && npm install --include=dev && npm test"
+
+                    sh """
+                    echo "Running Unit Tests..."
+                    docker run --rm -v "\$(pwd):/workspace" -w /workspace node:20 bash -c "${testCmds}"
+                    """
+                }
+            }
+        }
+
         // ✅ Build Docker images
         stage('Build Images') {
             steps {

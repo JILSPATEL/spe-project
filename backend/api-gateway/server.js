@@ -35,6 +35,11 @@ app.get('/api/health', (req, res) => {
     res.json({ status: 'OK', message: 'API Gateway is running' });
 });
 
-app.listen(PORT, () => {
-    console.log(`\n🚀 API Gateway is running on port ${PORT}\n`);
-});
+// Start server only when run directly (not during tests)
+if (require.main === module) {
+    app.listen(PORT, () => {
+        console.log(`\n🚀 API Gateway is running on port ${PORT}\n`);
+    });
+}
+
+module.exports = app;

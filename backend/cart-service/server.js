@@ -33,10 +33,12 @@ app.use((err, req, res, next) => {
     res.status(500).json({ message: 'Something went wrong!' });
 });
 
-// Start server
-app.listen(PORT, () => {
-    console.log(`\n🚀 ${'cart-service'} is running on port ${PORT}`);
-    console.log(`🏥 Health check: http://localhost:${PORT}/api/cart/health\n`);
-});
+// Start server only when run directly (not during tests)
+if (require.main === module) {
+    app.listen(PORT, () => {
+        console.log(`\n🚀 ${'cart-service'} is running on port ${PORT}`);
+        console.log(`🏥 Health check: http://localhost:${PORT}/api/cart/health\n`);
+    });
+}
 
 module.exports = app;

@@ -109,6 +109,28 @@ pipeline {
             }
         }
 
+        // ✅ Unit Tests — Jest
+        stage('Unit Tests') {
+            steps {
+                script {
+                    def testCmds = ""
+                    def servicesList = env.SERVICES.split(' ')
+                    for (int i = 0; i < servicesList.size(); i++) {
+                        def svc = servicesList[i]
+                        testCmds += "echo 'Unit Test: ${svc}...' && cd backend/${svc} && npm install --include=dev && npm test && cd ../../"
+                        if (i < servicesList.size() - 1) {
+                            testCmds += " && "
+                        }
+                    }
+
+                    sh """
+                    echo "Running Unit Tests..."
+                    docker run --rm -v "\$(pwd):/workspace" -w /workspace node:20 bash -c "${testCmds}"
+                    """
+                }
+            }
+        }
+
         // ✅ Build Docker images
         stage('Build Images') {
             steps {

@@ -80,6 +80,9 @@ pipeline {
                     for (int i = 0; i < servicesList.size(); i++) {
                         def svc = servicesList[i]
                         scaCmds += "echo 'SCA: ${svc}...' && cd backend/${svc} && npm install --include=dev && npm run sca && cd ../../ "
+                        if (i < servicesList.size() - 1) {
+                            scaCmds += "&& "
+                        }
                     }
                     
                     sh """
@@ -99,6 +102,9 @@ pipeline {
                     for (int i = 0; i < servicesList.size(); i++) {
                         def svc = servicesList[i]
                         sastCmds += "echo 'SAST: ${svc}...' && cd backend/${svc} && npm install --include=dev && npm run sast && cd ../../ "
+                        if (i < servicesList.size() - 1) {
+                            sastCmds += "&& "
+                        }
                     }
                     
                     sh """

@@ -21,5 +21,20 @@ module.exports = [
             "no-unused-vars": "off",
             "security/detect-object-injection": "warn"
         }
+    },
+    {
+        files: ["tests/**/*.js"],
+        languageOptions: {
+            globals: {
+                jest: true,
+                describe: true,
+                it: true,
+                expect: true,
+                beforeEach: true,
+                afterEach: true,
+                beforeAll: true,
+                afterAll: true,
+            }
+        }
     }
 ];

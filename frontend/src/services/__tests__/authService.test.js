@@ -16,15 +16,15 @@ vi.mock('axios', () => ({
 
 // Mock localStorage
 const localStorageMock = (() => {
-    let store = {};
+    const store = new Map();
     return {
-        getItem: (key) => store[key] ?? null,
-        setItem: (key, value) => { store[key] = String(value); },
-        removeItem: (key) => { delete store[key]; },
-        clear: () => { store = {}; }
+        getItem: (key) => store.get(key) ?? null,
+        setItem: (key, value) => { store.set(key, String(value)); },
+        removeItem: (key) => { store.delete(key); },
+        clear: () => { store.clear(); }
     };
 })();
-Object.defineProperty(global, 'localStorage', { value: localStorageMock });
+Object.defineProperty(globalThis, 'localStorage', { value: localStorageMock });
 
 // ─── Import services AFTER mocks are defined ──────────────────────────────────
 import { authService, sellerAuthService } from '../authService';
